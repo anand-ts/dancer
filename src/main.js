@@ -7,9 +7,11 @@ class AudioVisualizer {
     this.renderer = null;
     this.cubes = [];
     this.sphere = null;
+    this.matrixCircle = null;
     this.isPlaying = false;
     this.animationId = null;
     this.audioDataInterval = null;
+    this.currentTheme = 'matrix'; // Default theme
     
     this.init();
     this.setupEventListeners();
@@ -69,42 +71,39 @@ class AudioVisualizer {
   }
 
   createSimpleTest() {
-    // Create a simple red cube that should be very visible
-    const geometry = new THREE.BoxGeometry(2, 2, 2);
-    const material = new THREE.MeshBasicMaterial({ color: 0xff0000 });
-    this.testCube = new THREE.Mesh(geometry, material);
-    this.testCube.position.z = 0; // Right in front of camera
-    this.scene.add(this.testCube);
-    console.log('Simple test cube added at origin');
-    
-    // Add a wireframe sphere for extra visibility
-    const sphereGeometry = new THREE.SphereGeometry(3, 16, 16);
-    const sphereMaterial = new THREE.MeshBasicMaterial({ 
-      color: 0x00ff00, 
-      wireframe: true 
-    });
-    this.testSphere = new THREE.Mesh(sphereGeometry, sphereMaterial);
-    this.testSphere.position.set(5, 0, 0);
-    this.scene.add(this.testSphere);
-    console.log('Test wireframe sphere added');
+    // Remove test objects - themes will handle visuals
   }
 
-  createAudioReactiveObjects() {
-    // Create central sphere - smaller and closer
-    const sphereGeometry = new THREE.SphereGeometry(2, 32, 32);
-    const sphereMaterial = new THREE.MeshBasicMaterial({ 
-      color: 0xff6b6b,
+  createMatrixTheme() {
+    // Create Matrix-style green spinning circle
+    const circleGeometry = new THREE.RingGeometry(3, 4, 32);
+    const circleMaterial = new THREE.MeshBasicMaterial({ 
+      color: 0x00ff00,
       transparent: true,
-      opacity: 0.8
+      opacity: 0.8,
+      side: THREE.DoubleSide
     });
-    this.sphere = new THREE.Mesh(sphereGeometry, sphereMaterial);
-    this.sphere.position.set(0, 0, 0);
-    this.scene.add(this.sphere);
-    console.log('Central sphere added to scene');
+    this.matrixCircle = new THREE.Mesh(circleGeometry, circleMaterial);
+    this.scene.add(this.matrixCircle);
     
-    // Create frequency bars (cubes in a circle) - smaller and closer
+    // Add inner glowing circle for more Matrix effect
+    const innerGeometry = new THREE.RingGeometry(1, 2, 32);
+    const innerMaterial = new THREE.MeshBasicMaterial({ 
+      color: 0x00ff88,
+      transparent: true,
+      opacity: 0.6,
+      side: THREE.DoubleSide
+    });
+    this.matrixInnerCircle = new THREE.Mesh(innerGeometry, innerMaterial);
+    this.scene.add(this.matrixInnerCircle);
+    
+    console.log('Matrix theme: Green spinning circles created');
+  }
+
+  createRainbowTheme() {
+    // Create rainbow frequency bars (cubes in a circle)
     const cubeGeometry = new THREE.BoxGeometry(0.5, 0.5, 0.5);
-    const numCubes = 16; // Fewer cubes for testing
+    const numCubes = 32;
     
     for (let i = 0; i < numCubes; i++) {
       const cubeMaterial = new THREE.MeshBasicMaterial({ 
@@ -113,7 +112,7 @@ class AudioVisualizer {
       const cube = new THREE.Mesh(cubeGeometry, cubeMaterial);
       
       const angle = (i / numCubes) * Math.PI * 2;
-      const radius = 6; // Much smaller radius
+      const radius = 6;
       cube.position.x = Math.cos(angle) * radius;
       cube.position.z = Math.sin(angle) * radius;
       cube.originalY = 0;
@@ -121,7 +120,60 @@ class AudioVisualizer {
       this.cubes.push(cube);
       this.scene.add(cube);
     }
-    console.log('Created', numCubes, 'frequency cubes');
+    console.log('Rainbow theme: Created', numCubes, 'colorful cubes');
+  }
+
+  switchTheme(theme) {
+    console.log('Switching to theme:', theme);
+    
+    // Clear existing objects
+    this.clearScene();
+    
+    this.currentTheme = theme;
+    
+    // Create theme-specific objects
+    if (theme === 'matrix') {
+      this.createMatrixTheme();
+    } else if (theme === 'rainbow') {
+      this.createRainbowTheme();
+    }
+  }
+
+  clearScene() {
+    // Remove matrix circles
+    if (this.matrixCircle) {
+      this.scene.remove(this.matrixCircle);
+      this.matrixCircle = null;
+    }
+    if (this.matrixInnerCircle) {
+      this.scene.remove(this.matrixInnerCircle);
+      this.matrixInnerCircle = null;
+    }
+    
+    // Remove rainbow cubes
+    this.cubes.forEach(cube => {
+      this.scene.remove(cube);
+    });
+    this.cubes = [];
+    
+    // Remove any remaining test objects
+    if (this.sphere) {
+      this.scene.remove(this.sphere);
+      this.sphere = null;
+    }
+    if (this.testCube) {
+      this.scene.remove(this.testCube);
+      this.testCube = null;
+    }
+    if (this.testSphere) {
+      this.scene.remove(this.testSphere);
+      this.testSphere = null;
+    }
+  }
+
+  createAudioReactiveObjects() {
+    // Initialize with default theme
+    this.switchTheme(this.currentTheme);
   }
 
   async setupSystemAudio() {
@@ -204,44 +256,74 @@ class AudioVisualizer {
     if (!this.currentAudioData) return;
     
     const audioData = this.currentAudioData;
-    
-    // Calculate overall volume and frequency metrics
     const average = audioData.reduce((a, b) => a + b) / audioData.length;
     const max = Math.max(...audioData);
     
-    // Update sphere based on overall volume
-    const scale = 1 + (average / 256) * 3;
-    this.sphere.scale.setScalar(scale);
-    this.sphere.rotation.y += 0.01 * (average / 128);
-    this.sphere.rotation.x += 0.005 * (max / 256);
+    if (this.currentTheme === 'matrix') {
+      this.updateMatrixVisualization(audioData, average, max);
+    } else if (this.currentTheme === 'rainbow') {
+      this.updateRainbowVisualization(audioData, average, max);
+    }
+  }
+
+  updateMatrixVisualization(audioData, average, max) {
+    if (this.matrixCircle) {
+      // Scale based on volume
+      const scale = 1 + (average / 256) * 2;
+      this.matrixCircle.scale.setScalar(scale);
+      
+      // Rotation speed based on audio
+      this.matrixCircle.rotation.z += 0.02 + (average / 512) * 0.1;
+      
+      // Opacity based on volume
+      this.matrixCircle.material.opacity = 0.5 + (average / 512);
+      
+      // Green intensity based on volume
+      const greenIntensity = 0.6 + (average / 512);
+      this.matrixCircle.material.color.setRGB(0, greenIntensity, 0);
+    }
     
-    // Update sphere color based on frequency
-    const hue = (average / 256) * 0.8; // Extended color range
-    this.sphere.material.color.setHSL(hue, 0.9, 0.6);
-    
-    // Make sphere glow more with higher volume
-    this.sphere.material.opacity = 0.6 + (average / 512);
-    
-    // Update cubes based on frequency data
+    if (this.matrixInnerCircle) {
+      // Inner circle reacts to higher frequencies
+      const highFreqAvg = audioData.slice(audioData.length * 0.7).reduce((a, b) => a + b) / (audioData.length * 0.3);
+      
+      // Scale based on high frequency content
+      const innerScale = 1 + (highFreqAvg / 256) * 1.5;
+      this.matrixInnerCircle.scale.setScalar(innerScale);
+      
+      // Counter-rotate based on audio
+      this.matrixInnerCircle.rotation.z -= 0.03 + (highFreqAvg / 512) * 0.15;
+      
+      // Opacity based on high frequencies
+      this.matrixInnerCircle.material.opacity = 0.3 + (highFreqAvg / 512);
+      
+      // Brighter green for high frequencies
+      const innerGreenIntensity = 0.7 + (highFreqAvg / 512);
+      this.matrixInnerCircle.material.color.setRGB(0, innerGreenIntensity, 0.2);
+    }
+  }
+
+  updateRainbowVisualization(audioData, average, max) {
+    // Update rainbow cubes based on frequency data
     this.cubes.forEach((cube, index) => {
       const dataIndex = Math.floor(index * audioData.length / this.cubes.length);
       const value = audioData[dataIndex];
       
-      // Scale cube height based on frequency (more dramatic)
-      const height = (value / 256) * 15 + 0.5;
+      // Scale cube height based on frequency
+      const height = (value / 256) * 12 + 0.5;
       cube.scale.y = height;
       cube.position.y = cube.originalY + height / 2;
       
-      // Scale width slightly for more dynamic effect
+      // Scale width based on value
       const widthScale = 1 + (value / 512);
       cube.scale.x = widthScale;
       cube.scale.z = widthScale;
       
-      // Rotate cubes based on their frequency value
+      // Rotation based on frequency
       cube.rotation.y += 0.02 + (value / 512) * 0.05;
       cube.rotation.z += 0.01;
       
-      // Update color based on frequency and position
+      // Color based on frequency and position
       const hue = (index / this.cubes.length + average / 512 + value / 1024) % 1;
       const saturation = 0.7 + (value / 512) * 0.3;
       const lightness = 0.4 + (value / 512) * 0.4;
@@ -279,63 +361,78 @@ class AudioVisualizer {
   updateIdleAnimation() {
     const time = Date.now() * 0.001;
     
-    // Animate test objects for visibility
-    if (this.testCube) {
-      this.testCube.rotation.x = time;
-      this.testCube.rotation.y = time * 0.7;
-      console.log('Test cube rotating at time:', time);
+    if (this.currentTheme === 'matrix') {
+      this.updateMatrixAnimation(time);
+    } else if (this.currentTheme === 'rainbow') {
+      this.updateRainbowAnimation(time);
     }
-    
-    if (this.testSphere) {
-      this.testSphere.rotation.y = time;
-      this.testSphere.position.y = Math.sin(time) * 2;
-    }
-    
-    // More dramatic breathing effect for sphere
-    if (this.sphere) {
-      const breathe = 1.2 + Math.sin(time * 1.5) * 0.5;
-      this.sphere.scale.setScalar(breathe);
-      this.sphere.rotation.y += 0.015;
-      this.sphere.rotation.x += 0.008;
+  }
+
+  updateMatrixAnimation(time) {
+    if (this.matrixCircle) {
+      // Spinning rotation
+      this.matrixCircle.rotation.z = time * 2;
       
-      // Rainbow color cycling for sphere (faster)
-      const hue = (time * 0.15) % 1;
-      this.sphere.material.color.setHSL(hue, 0.9, 0.7);
+      // Pulsating scale
+      const scale = 1 + Math.sin(time * 3) * 0.3;
+      this.matrixCircle.scale.setScalar(scale);
       
-      // Pulsating opacity for more visual appeal
-      this.sphere.material.opacity = 0.7 + Math.sin(time * 3) * 0.2;
+      // Pulsating opacity for matrix effect
+      this.matrixCircle.material.opacity = 0.6 + Math.sin(time * 4) * 0.3;
+      
+      // Matrix-style green color variations
+      const greenIntensity = 0.8 + Math.sin(time * 2) * 0.2;
+      this.matrixCircle.material.color.setRGB(0, greenIntensity, 0);
     }
     
-    // More dramatic wave pattern for cubes
+    if (this.matrixInnerCircle) {
+      // Counter-rotating inner circle
+      this.matrixInnerCircle.rotation.z = -time * 1.5;
+      
+      // Slightly different pulsing
+      const innerScale = 1 + Math.sin(time * 4 + 1) * 0.2;
+      this.matrixInnerCircle.scale.setScalar(innerScale);
+      
+      // Pulsating opacity offset from outer circle
+      this.matrixInnerCircle.material.opacity = 0.4 + Math.sin(time * 3 + 1) * 0.3;
+      
+      // Brighter green variations
+      const innerGreenIntensity = 0.9 + Math.sin(time * 3) * 0.1;
+      this.matrixInnerCircle.material.color.setRGB(0, innerGreenIntensity, 0.3);
+    }
+  }
+
+  updateRainbowAnimation(time) {
+    // Animate rainbow cubes in wave pattern
     this.cubes.forEach((cube, index) => {
-      const waveOffset = index * 0.15;
+      const waveOffset = index * 0.2;
       const wave1 = Math.sin(time * 2.5 + waveOffset) * 0.5 + 0.5;
       const wave2 = Math.sin(time * 4 + waveOffset * 0.5) * 0.3 + 0.3;
       const combinedWave = (wave1 + wave2) / 2;
       
-      // More dramatic height animation
-      const height = 1 + combinedWave * 12;
+      // Height animation
+      const height = 1 + combinedWave * 8;
       cube.scale.y = height;
       cube.position.y = cube.originalY + height / 2;
       
-      // Enhanced rotation with multiple axes
+      // Rotation
       cube.rotation.y += 0.025 + combinedWave * 0.02;
       cube.rotation.x += 0.01;
       cube.rotation.z = Math.sin(time * 2 + waveOffset) * 0.3;
       
-      // Dynamic color waves with multiple hues
+      // Rainbow color cycling
       const colorHue = (index / this.cubes.length + time * 0.2 + combinedWave * 0.1) % 1;
       const saturation = 0.8 + combinedWave * 0.2;
       const lightness = 0.4 + combinedWave * 0.4;
       cube.material.color.setHSL(colorHue, saturation, lightness);
       
-      // More dramatic scale pulsing
+      // Scale pulsing
       const pulse = 1 + Math.sin(time * 3 + waveOffset) * 0.4;
       cube.scale.x = pulse;
       cube.scale.z = pulse;
       
-      // Add vertical bobbing motion
-      const bob = Math.sin(time * 2 + waveOffset * 2) * 2;
+      // Vertical bobbing
+      const bob = Math.sin(time * 2 + waveOffset * 2) * 1.5;
       cube.position.y += bob;
     });
   }
@@ -344,6 +441,13 @@ class AudioVisualizer {
     const startBtn = document.getElementById('start-btn');
     const stopBtn = document.getElementById('stop-btn');
     const testBtn = document.getElementById('test-btn');
+    const themeSelect = document.getElementById('theme-select');
+    
+    // Theme selector event listener
+    themeSelect.addEventListener('change', (e) => {
+      console.log('Theme changed to:', e.target.value);
+      this.switchTheme(e.target.value);
+    });
     
     startBtn.addEventListener('click', async () => {
       console.log('Start button clicked');

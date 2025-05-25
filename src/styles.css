@@ -53,6 +53,26 @@ body {
   max-width: 280px;
 }
 
+#theme-selector {
+  margin-bottom: 15px;
+}
+
+#theme-selector label {
+  display: block;
+  margin-bottom: 5px;
+  font-weight: bold;
+  color: #333;
+}
+
+#theme-select {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  background: white;
+  font-size: 14px;
+}
+
 button {
   background: #667eea;
   color: white;
