@@ -71,33 +71,50 @@ class AudioVisualizer {
   }
 
   createSimpleTest() {
-    // Remove test objects - themes will handle visuals
+    // Create a simple red cube that should be very visible
+    const geometry = new THREE.BoxGeometry(2, 2, 2);
+    const material = new THREE.MeshBasicMaterial({ color: 0xff0000 });
+    this.testCube = new THREE.Mesh(geometry, material);
+    this.testCube.position.z = 0; // Right in front of camera
+    this.scene.add(this.testCube);
+    console.log('Simple test cube added at origin');
+    
+    // Add a wireframe sphere for extra visibility
+    const sphereGeometry = new THREE.SphereGeometry(3, 16, 16);
+    const sphereMaterial = new THREE.MeshBasicMaterial({ 
+      color: 0x00ff00, 
+      wireframe: true 
+    });
+    this.testSphere = new THREE.Mesh(sphereGeometry, sphereMaterial);
+    this.testSphere.position.set(5, 0, 0);
+    this.scene.add(this.testSphere);
+    console.log('Test wireframe sphere added');
   }
 
   createMatrixTheme() {
-    // Create Matrix-style green spinning circle
-    const circleGeometry = new THREE.RingGeometry(3, 4, 32);
-    const circleMaterial = new THREE.MeshBasicMaterial({ 
+    // Create Matrix-style 3D green wireframe sphere
+    const sphereGeometry = new THREE.SphereGeometry(4, 32, 32);
+    const sphereMaterial = new THREE.MeshBasicMaterial({ 
       color: 0x00ff00,
+      wireframe: true,
       transparent: true,
-      opacity: 0.8,
-      side: THREE.DoubleSide
+      opacity: 0.8
     });
-    this.matrixCircle = new THREE.Mesh(circleGeometry, circleMaterial);
-    this.scene.add(this.matrixCircle);
+    this.matrixSphere = new THREE.Mesh(sphereGeometry, sphereMaterial);
+    this.scene.add(this.matrixSphere);
     
-    // Add inner glowing circle for more Matrix effect
-    const innerGeometry = new THREE.RingGeometry(1, 2, 32);
-    const innerMaterial = new THREE.MeshBasicMaterial({ 
+    // Add inner wireframe sphere for more Matrix effect
+    const innerSphereGeometry = new THREE.SphereGeometry(2.5, 16, 16);
+    const innerSphereMaterial = new THREE.MeshBasicMaterial({ 
       color: 0x00ff88,
+      wireframe: true,
       transparent: true,
-      opacity: 0.6,
-      side: THREE.DoubleSide
+      opacity: 0.6
     });
-    this.matrixInnerCircle = new THREE.Mesh(innerGeometry, innerMaterial);
-    this.scene.add(this.matrixInnerCircle);
+    this.matrixInnerSphere = new THREE.Mesh(innerSphereGeometry, innerSphereMaterial);
+    this.scene.add(this.matrixInnerSphere);
     
-    console.log('Matrix theme: Green spinning circles created');
+    console.log('Matrix theme: Green wireframe spheres created');
   }
 
   createRainbowTheme() {
@@ -140,14 +157,14 @@ class AudioVisualizer {
   }
 
   clearScene() {
-    // Remove matrix circles
-    if (this.matrixCircle) {
-      this.scene.remove(this.matrixCircle);
-      this.matrixCircle = null;
+    // Remove matrix spheres
+    if (this.matrixSphere) {
+      this.scene.remove(this.matrixSphere);
+      this.matrixSphere = null;
     }
-    if (this.matrixInnerCircle) {
-      this.scene.remove(this.matrixInnerCircle);
-      this.matrixInnerCircle = null;
+    if (this.matrixInnerSphere) {
+      this.scene.remove(this.matrixInnerSphere);
+      this.matrixInnerSphere = null;
     }
     
     // Remove rainbow cubes
@@ -190,7 +207,7 @@ class AudioVisualizer {
       const result = await invoke('start_audio_capture');
       
       console.log('System audio capture result:', result);
-      document.getElementById('status').textContent = 'System audio capture active! 🎵';
+      document.getElementById('status').textContent = 'System audio capture active!';
       
       // Start polling for audio data
       this.startAudioDataPolling();
@@ -200,7 +217,7 @@ class AudioVisualizer {
       console.error('Error starting system audio:', error);
       console.log('Falling back to mock audio data...');
       
-      document.getElementById('status').textContent = 'Using demo mode - beautiful visualizations! 🌈';
+      document.getElementById('status').textContent = 'Using demo mode - beautiful visualizations!';
       
       // Start mock data for demo purposes
       this.startMockAudioData();
@@ -267,39 +284,43 @@ class AudioVisualizer {
   }
 
   updateMatrixVisualization(audioData, average, max) {
-    if (this.matrixCircle) {
+    if (this.matrixSphere) {
       // Scale based on volume
       const scale = 1 + (average / 256) * 2;
-      this.matrixCircle.scale.setScalar(scale);
+      this.matrixSphere.scale.setScalar(scale);
       
-      // Rotation speed based on audio
-      this.matrixCircle.rotation.z += 0.02 + (average / 512) * 0.1;
+      // Multi-axis rotation speed based on audio
+      this.matrixSphere.rotation.x += 0.015 + (average / 512) * 0.08;
+      this.matrixSphere.rotation.y += 0.02 + (average / 512) * 0.1;
+      this.matrixSphere.rotation.z += 0.01 + (average / 512) * 0.05;
       
       // Opacity based on volume
-      this.matrixCircle.material.opacity = 0.5 + (average / 512);
+      this.matrixSphere.material.opacity = 0.5 + (average / 512);
       
       // Green intensity based on volume
       const greenIntensity = 0.6 + (average / 512);
-      this.matrixCircle.material.color.setRGB(0, greenIntensity, 0);
+      this.matrixSphere.material.color.setRGB(0, greenIntensity, 0);
     }
     
-    if (this.matrixInnerCircle) {
-      // Inner circle reacts to higher frequencies
+    if (this.matrixInnerSphere) {
+      // Inner sphere reacts to higher frequencies
       const highFreqAvg = audioData.slice(audioData.length * 0.7).reduce((a, b) => a + b) / (audioData.length * 0.3);
       
       // Scale based on high frequency content
       const innerScale = 1 + (highFreqAvg / 256) * 1.5;
-      this.matrixInnerCircle.scale.setScalar(innerScale);
+      this.matrixInnerSphere.scale.setScalar(innerScale);
       
-      // Counter-rotate based on audio
-      this.matrixInnerCircle.rotation.z -= 0.03 + (highFreqAvg / 512) * 0.15;
+      // Counter-rotate based on audio with different axes
+      this.matrixInnerSphere.rotation.x -= 0.025 + (highFreqAvg / 512) * 0.12;
+      this.matrixInnerSphere.rotation.y += 0.03 + (highFreqAvg / 512) * 0.15;
+      this.matrixInnerSphere.rotation.z -= 0.02 + (highFreqAvg / 512) * 0.1;
       
       // Opacity based on high frequencies
-      this.matrixInnerCircle.material.opacity = 0.3 + (highFreqAvg / 512);
+      this.matrixInnerSphere.material.opacity = 0.3 + (highFreqAvg / 512);
       
       // Brighter green for high frequencies
       const innerGreenIntensity = 0.7 + (highFreqAvg / 512);
-      this.matrixInnerCircle.material.color.setRGB(0, innerGreenIntensity, 0.2);
+      this.matrixInnerSphere.material.color.setRGB(0, innerGreenIntensity, 0.2);
     }
   }
 
@@ -361,6 +382,18 @@ class AudioVisualizer {
   updateIdleAnimation() {
     const time = Date.now() * 0.001;
     
+    // Animate test objects for visibility
+    if (this.testCube) {
+      this.testCube.rotation.x = time;
+      this.testCube.rotation.y = time * 0.7;
+      console.log('Test cube rotating at time:', time);
+    }
+    
+    if (this.testSphere) {
+      this.testSphere.rotation.y = time;
+      this.testSphere.position.y = Math.sin(time) * 2;
+    }
+    
     if (this.currentTheme === 'matrix') {
       this.updateMatrixAnimation(time);
     } else if (this.currentTheme === 'rainbow') {
@@ -369,36 +402,40 @@ class AudioVisualizer {
   }
 
   updateMatrixAnimation(time) {
-    if (this.matrixCircle) {
-      // Spinning rotation
-      this.matrixCircle.rotation.z = time * 2;
+    if (this.matrixSphere) {
+      // Multi-axis rotation for 3D sphere
+      this.matrixSphere.rotation.x = time * 1.2;
+      this.matrixSphere.rotation.y = time * 0.8;
+      this.matrixSphere.rotation.z = time * 0.5;
       
       // Pulsating scale
       const scale = 1 + Math.sin(time * 3) * 0.3;
-      this.matrixCircle.scale.setScalar(scale);
+      this.matrixSphere.scale.setScalar(scale);
       
       // Pulsating opacity for matrix effect
-      this.matrixCircle.material.opacity = 0.6 + Math.sin(time * 4) * 0.3;
+      this.matrixSphere.material.opacity = 0.6 + Math.sin(time * 4) * 0.3;
       
       // Matrix-style green color variations
       const greenIntensity = 0.8 + Math.sin(time * 2) * 0.2;
-      this.matrixCircle.material.color.setRGB(0, greenIntensity, 0);
+      this.matrixSphere.material.color.setRGB(0, greenIntensity, 0);
     }
     
-    if (this.matrixInnerCircle) {
-      // Counter-rotating inner circle
-      this.matrixInnerCircle.rotation.z = -time * 1.5;
+    if (this.matrixInnerSphere) {
+      // Counter-rotating inner sphere with different axes
+      this.matrixInnerSphere.rotation.x = -time * 1.8;
+      this.matrixInnerSphere.rotation.y = time * 1.2;
+      this.matrixInnerSphere.rotation.z = -time * 0.7;
       
       // Slightly different pulsing
       const innerScale = 1 + Math.sin(time * 4 + 1) * 0.2;
-      this.matrixInnerCircle.scale.setScalar(innerScale);
+      this.matrixInnerSphere.scale.setScalar(innerScale);
       
-      // Pulsating opacity offset from outer circle
-      this.matrixInnerCircle.material.opacity = 0.4 + Math.sin(time * 3 + 1) * 0.3;
+      // Pulsating opacity offset from outer sphere
+      this.matrixInnerSphere.material.opacity = 0.4 + Math.sin(time * 3 + 1) * 0.3;
       
       // Brighter green variations
       const innerGreenIntensity = 0.9 + Math.sin(time * 3) * 0.1;
-      this.matrixInnerCircle.material.color.setRGB(0, innerGreenIntensity, 0.3);
+      this.matrixInnerSphere.material.color.setRGB(0, innerGreenIntensity, 0.3);
     }
   }
 
@@ -505,7 +542,7 @@ class AudioVisualizer {
     document.getElementById('start-btn').textContent = 'Start Audio Visualization';
     document.getElementById('stop-btn').disabled = true;
     document.getElementById('test-btn').disabled = true;
-    document.getElementById('status').textContent = '🌈 Idle Animation Active - Beautiful visuals even without audio!';
+    document.getElementById('status').textContent = 'Idle Animation Active - Beautiful visuals even without audio!';
     document.getElementById('level-fill').style.width = '0%';
     document.getElementById('level-text').textContent = '0';
     

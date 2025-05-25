@@ -49,7 +49,11 @@ Thumbs.db
 
 # Tauri specific
 src-tauri/target/
-src-tauri/gen/schemas/
+src-tauri/gen/
+*.app
+*.dmg
+*.deb
+*.AppImage
 
 # Audio processing temporary files
 *.wav
