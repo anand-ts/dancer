@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="stylesheet" href="styles.css" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Dancer</title>
+    <script type="module" src="/main.js" defer></script>
+  </head>
+
+  <body>
+    <div id="container">
+      <canvas id="three-canvas" width="800" height="600"></canvas>
+      <div id="controls">
+        <button id="start-btn">Start System Audio</button>
+        <button id="stop-btn" disabled>Stop</button>
+        <button id="test-btn" disabled>Demo Mode</button>
+        <div id="status">🌈 Idle Animation Active - Beautiful visuals even without audio! Click "Start" to sync with system audio.</div>
+        <div id="audio-level">
+          <div>Audio Level:</div>
+          <div id="level-bar">
+            <div id="level-fill"></div>
+          </div>
+          <div id="level-text">0</div>
+        </div>
+        <div id="instructions">
+          <strong>System Audio Visualization:</strong><br>
+          • Reacts to ALL system audio (Spotify, YouTube, etc.)<br>
+          • No microphone needed<br>
+          • Beautiful idle animation when no audio<br>
+          • Works with any music app on your computer<br>
+          • Check browser console for debug info
+        </div>
+      </div>
+    </div>
+  </body>
+</html>
