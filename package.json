@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite src",
+    "build": "vite build",
     "tauri": "tauri"
   },
   "devDependencies": {

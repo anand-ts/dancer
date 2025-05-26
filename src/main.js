@@ -219,7 +219,7 @@ class AudioVisualizer {
       
       document.getElementById('status').textContent = 'Using demo mode - beautiful visualizations!';
       
-      // Start mock data for demo purposes
+      // Start mock data for demo purposes ONLY when Tauri is not available
       this.startMockAudioData();
       
       return true; // Return true to show visualization anyway
@@ -403,38 +403,38 @@ class AudioVisualizer {
 
   updateMatrixAnimation(time) {
     if (this.matrixSphere) {
-      // Multi-axis rotation for 3D sphere
-      this.matrixSphere.rotation.x = time * 1.2;
-      this.matrixSphere.rotation.y = time * 0.8;
-      this.matrixSphere.rotation.z = time * 0.5;
+      // Slower, more subtle rotation for 3D sphere
+      this.matrixSphere.rotation.x = time * 0.3;
+      this.matrixSphere.rotation.y = time * 0.2;
+      this.matrixSphere.rotation.z = time * 0.15;
       
-      // Pulsating scale
-      const scale = 1 + Math.sin(time * 3) * 0.3;
+      // Gentle pulsating scale
+      const scale = 1 + Math.sin(time * 1.5) * 0.1;
       this.matrixSphere.scale.setScalar(scale);
       
-      // Pulsating opacity for matrix effect
-      this.matrixSphere.material.opacity = 0.6 + Math.sin(time * 4) * 0.3;
+      // Subtle opacity changes for matrix effect
+      this.matrixSphere.material.opacity = 0.7 + Math.sin(time * 2) * 0.1;
       
-      // Matrix-style green color variations
-      const greenIntensity = 0.8 + Math.sin(time * 2) * 0.2;
+      // Gentle green color variations
+      const greenIntensity = 0.8 + Math.sin(time * 1.2) * 0.1;
       this.matrixSphere.material.color.setRGB(0, greenIntensity, 0);
     }
     
     if (this.matrixInnerSphere) {
-      // Counter-rotating inner sphere with different axes
-      this.matrixInnerSphere.rotation.x = -time * 1.8;
-      this.matrixInnerSphere.rotation.y = time * 1.2;
-      this.matrixInnerSphere.rotation.z = -time * 0.7;
+      // Slower counter-rotating inner sphere
+      this.matrixInnerSphere.rotation.x = -time * 0.4;
+      this.matrixInnerSphere.rotation.y = time * 0.3;
+      this.matrixInnerSphere.rotation.z = -time * 0.2;
       
-      // Slightly different pulsing
-      const innerScale = 1 + Math.sin(time * 4 + 1) * 0.2;
+      // Very subtle pulsing
+      const innerScale = 1 + Math.sin(time * 2 + 1) * 0.08;
       this.matrixInnerSphere.scale.setScalar(innerScale);
       
-      // Pulsating opacity offset from outer sphere
-      this.matrixInnerSphere.material.opacity = 0.4 + Math.sin(time * 3 + 1) * 0.3;
+      // Gentle opacity changes offset from outer sphere
+      this.matrixInnerSphere.material.opacity = 0.5 + Math.sin(time * 1.8 + 1) * 0.1;
       
-      // Brighter green variations
-      const innerGreenIntensity = 0.9 + Math.sin(time * 3) * 0.1;
+      // Subtle green variations
+      const innerGreenIntensity = 0.9 + Math.sin(time * 1.5) * 0.05;
       this.matrixInnerSphere.material.color.setRGB(0, innerGreenIntensity, 0.3);
     }
   }
@@ -497,7 +497,7 @@ class AudioVisualizer {
           this.isPlaying = true;
           startBtn.textContent = 'System Audio Active';
           stopBtn.disabled = false;
-          testBtn.disabled = false;
+          testBtn.disabled = true; // Disable demo when real audio is active
         } else {
           throw new Error('Failed to setup audio');
         }
@@ -515,8 +515,21 @@ class AudioVisualizer {
     });
     
     testBtn.addEventListener('click', () => {
-      console.log('Testing audio input...');
-      document.getElementById('status').textContent = 'Test mode active - watch the visualization!';
+      console.log('Demo mode button clicked');
+      
+      if (!this.isPlaying) {
+        // Start demo mode with mock audio
+        this.isPlaying = true;
+        this.startMockAudioData();
+        
+        testBtn.textContent = 'Stop Demo';
+        startBtn.disabled = true;
+        stopBtn.disabled = false;
+        document.getElementById('status').textContent = 'Demo mode active - beautiful mock audio visualization!';
+      } else {
+        // Stop demo mode
+        this.stopAudio();
+      }
     });
   }
 
@@ -539,9 +552,10 @@ class AudioVisualizer {
     this.currentAudioData = null;
     
     document.getElementById('start-btn').disabled = false;
-    document.getElementById('start-btn').textContent = 'Start Audio Visualization';
+    document.getElementById('start-btn').textContent = 'Start System Audio';
     document.getElementById('stop-btn').disabled = true;
-    document.getElementById('test-btn').disabled = true;
+    document.getElementById('test-btn').disabled = false;
+    document.getElementById('test-btn').textContent = 'Demo Mode';
     document.getElementById('status').textContent = 'Idle Animation Active - Beautiful visuals even without audio!';
     document.getElementById('level-fill').style.width = '0%';
     document.getElementById('level-text').textContent = '0';
