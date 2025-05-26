@@ -556,7 +556,7 @@ class AudioVisualizer {
     document.getElementById('stop-btn').disabled = true;
     document.getElementById('test-btn').disabled = false;
     document.getElementById('test-btn').textContent = 'Demo Mode';
-    document.getElementById('status').textContent = 'Idle Animation Active - Beautiful visuals even without audio!';
+    document.getElementById('status').textContent = '';
     document.getElementById('level-fill').style.width = '0%';
     document.getElementById('level-text').textContent = '0';
     
