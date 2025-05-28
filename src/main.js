@@ -195,34 +195,23 @@ class AudioVisualizer {
 
   async setupSystemAudio() {
     try {
-      document.getElementById('status').textContent = 'Starting system audio capture...';
-      console.log('Starting system audio capture...');
-      
-      // Check if Tauri is available
+      document.getElementById('status').textContent = 'Starting audio capture...';
+      console.log('Starting audio capture...');
       if (typeof window.__TAURI__ === 'undefined') {
         throw new Error('Tauri not available - running in browser mode with mock data');
       }
-      
       const { invoke } = window.__TAURI__.core;
-      const result = await invoke('start_audio_capture');
-      
-      console.log('System audio capture result:', result);
-      document.getElementById('status').textContent = 'System audio capture active!';
-      
-      // Start polling for audio data
+      const device = document.getElementById('audio-device-select').value;
+      const result = await invoke('start_audio_capture_with_device', { deviceName: device });
+      console.log('Audio capture result:', result);
+      document.getElementById('status').textContent = 'Audio capture active!';
       this.startAudioDataPolling();
-      
       return true;
     } catch (error) {
-      console.error('Error starting system audio:', error);
-      console.log('Falling back to mock audio data...');
-      
+      console.error('Error starting audio:', error);
       document.getElementById('status').textContent = 'Using demo mode - beautiful visualizations!';
-      
-      // Start mock data for demo purposes ONLY when Tauri is not available
       this.startMockAudioData();
-      
-      return true; // Return true to show visualization anyway
+      return true;
     }
   }
 
@@ -571,7 +560,7 @@ class AudioVisualizer {
 }
 
 // Initialize when DOM is loaded
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
   console.log("DOM loaded, starting Dancer app initialization");
   
   // Quick test to verify Three.js is working
@@ -591,6 +580,23 @@ document.addEventListener('DOMContentLoaded', () => {
     console.error('Canvas element not found!');
   }
   
+  if (window.__TAURI__) {
+    const { invoke } = window.__TAURI__.core;
+    const select = document.getElementById('audio-device-select');
+    try {
+      const devices = await invoke('list_audio_input_devices');
+      select.innerHTML = '';
+      devices.forEach(device => {
+        const opt = document.createElement('option');
+        opt.value = device;
+        opt.textContent = device;
+        select.appendChild(opt);
+      });
+    } catch (e) {
+      select.innerHTML = '<option>Error loading devices</option>';
+    }
+  }
+
   try {
     new AudioVisualizer();
   } catch (error) {

@@ -19,6 +19,22 @@
     ],
     "security": {
       "csp": null
+    },
+    "acl": {
+      "plugins": {
+        "ipc": {
+          "commands": {
+            "allow": [
+              "list_audio_input_devices",
+              "start_audio_capture_with_device",
+              "stop_audio_capture",
+              "get_audio_data",
+              "start_audio_capture"
+            ],
+            "deny": []
+          }
+        }
+      }
     }
   },
   "bundle": {
