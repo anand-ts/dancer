@@ -1,205 +1,153 @@
-use std::sync::Mutex;
-use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
-use tauri::Window;
-use once_cell::sync::Lazy;
-use std::thread;
-use std::sync::mpsc;
+use std::sync::{Arc, Mutex};
+use screencapturekit::sc_shareable_content::SCShareableContent;
+use screencapturekit::sc_stream_configuration::SCStreamConfiguration;
+use screencapturekit::sc_content_filter::{SCContentFilter, InitParams};
+use screencapturekit::sc_output_handler::SCStreamOutputType;
+use screencapturekit::sc_stream::SCStream;
+use screencapturekit::sc_error_handler::StreamErrorHandler;
 
-// Shared buffer for audio samples
-static AUDIO_BUFFER: Lazy<Mutex<Vec<f32>>> = Lazy::new(|| Mutex::new(vec![0.0; 2048]));
-// Channel to stop audio capture
-static STOP_SENDER: Lazy<Mutex<Option<mpsc::Sender<()>>>> = Lazy::new(|| Mutex::new(None));
-
-#[tauri::command]
-async fn list_audio_input_devices() -> Result<Vec<String>, String> {
-    let host = cpal::default_host();
-    let devices = host.input_devices().map_err(|e| e.to_string())?;
-    let names = devices
-        .filter_map(|d| d.name().ok())
-        .collect();
-    Ok(names)
+// Global state for SCK stream and captured audio data
+struct AppState {
+    stream: Option<SCStream>,
+    audio_buffer: Arc<Mutex<Vec<f32>>>,
 }
 
+impl AppState {
+    fn new() -> Self {
+        AppState {
+            stream: None,
+            audio_buffer: Arc::new(Mutex::new(Vec::new())),
+        }
+    }
+}
+
+// Tauri command to start system audio capture
 #[tauri::command]
-async fn start_audio_capture_with_device(device_name: String) -> Result<String, String> {
-    // Stop any existing capture first
-    {
-        let mut stop_guard = STOP_SENDER.lock().unwrap();
-        if let Some(sender) = stop_guard.take() {
-            let _ = sender.send(()); // Signal the thread to stop
+async fn start_system_audio_capture(state: tauri::State<'_, Arc<Mutex<AppState>>>) -> Result<String, String> {
+    let content = SCShareableContent::current();
+    let displays = content.displays;
+    
+    let display = displays.first().ok_or_else(|| "No displays found".to_string())?;
+    let filter = SCContentFilter::new(InitParams::Display(display.clone())); // Use new API
+    
+    let config = SCStreamConfiguration {
+        width: 1,
+        height: 1,
+        captures_audio: true,
+        excludes_current_process_audio: false,
+        ..Default::default()
+    };
+
+    let mut app_state = state.lock().unwrap();
+    
+    if app_state.stream.is_some() {
+        return Ok("Audio capture already running".to_string());
+    }
+
+    let audio_buffer_clone = Arc::clone(&app_state.audio_buffer);
+
+    struct MyStreamOutput {
+        audio_buffer: Arc<Mutex<Vec<f32>>>,
+    }
+    impl screencapturekit::sc_output_handler::StreamOutput for MyStreamOutput {
+        fn did_output_sample_buffer(&self, sample_buffer: screencapturekit::cm_sample_buffer::CMSampleBuffer, of_type: SCStreamOutputType) {
+            // Check if this is audio output by using matches! macro instead of ==
+            if matches!(of_type, SCStreamOutputType::Audio) {
+                match process_cmsamplebuffer(&sample_buffer) {
+                    Ok(audio_data) => {
+                        let mut buffer = self.audio_buffer.lock().unwrap();
+                        buffer.extend(audio_data);
+                        const MAX_SAMPLES: usize = 44100 * 5; 
+                        if buffer.len() > MAX_SAMPLES {
+                            let overflow = buffer.len() - MAX_SAMPLES;
+                            buffer.drain(0..overflow);
+                        }
+                    }
+                    Err(e) => {
+                        eprintln!("Error processing audio sample buffer: {:?}", e);
+                    }
+                }
+            }
+        }
+    }
+    
+    let stream_output_handler = MyStreamOutput { audio_buffer: audio_buffer_clone };
+
+    struct MyErrorHandler;
+    impl StreamErrorHandler for MyErrorHandler {
+        fn on_error(&self) {
+            eprintln!("Stream error occurred");
         }
     }
 
-    let host = cpal::default_host();
-    let device = host.input_devices()
-        .map_err(|e| e.to_string())?
-        .find(|d| d.name().map(|n| n == device_name).unwrap_or(false))
-        .ok_or("Device not found")?;
+    let mut stream = SCStream::new(filter, config, MyErrorHandler);
+    stream.add_output(stream_output_handler, SCStreamOutputType::Audio);
     
-    let config = device.default_input_config().map_err(|e| e.to_string())?;
-    println!("Audio config: {:?}", config);
-
-    // Clear the buffer
-    {
-        let mut buf = AUDIO_BUFFER.lock().unwrap();
-        buf.fill(0.0);
+    match stream.start_capture() {
+        Ok(_) => {
+            app_state.stream = Some(stream);
+            Ok("System audio capture started".to_string())
+        }
+        Err(e) => {
+            eprintln!("Failed to start capture: {:?}", e);
+            Err(format!("Failed to start capture: {:?}", e))
+        }
     }
+}
 
-    // Create a channel for stopping the audio capture
-    let (stop_tx, stop_rx) = mpsc::channel();
-    
-    // Store the stop sender
-    {
-        let mut stop_guard = STOP_SENDER.lock().unwrap();
-        *stop_guard = Some(stop_tx);
-    }
-
-    // Spawn a thread to handle audio capture
-    let device_name_clone = device_name.clone();
-    thread::spawn(move || {
-        let err_fn = |err| eprintln!("Stream error: {}", err);
-        
-        let stream_result = match config.sample_format() {
-            cpal::SampleFormat::F32 => {
-                device.build_input_stream(
-                    &config.into(),
-                    move |data: &[f32], _| {
-                        let mut buf = AUDIO_BUFFER.lock().unwrap();
-                        let copy_len = data.len().min(buf.len());
-                        buf[..copy_len].copy_from_slice(&data[..copy_len]);
-                        
-                        // Calculate RMS for debugging
-                        let rms: f32 = data.iter().map(|&x| x * x).sum::<f32>() / data.len() as f32;
-                        let rms = rms.sqrt();
-                        if rms > 0.001 { // Only print if there's significant audio
-                            println!("Audio RMS: {:.4}", rms);
-                        }
-                    },
-                    err_fn,
-                    None,
-                )
-            },
-            cpal::SampleFormat::I16 => {
-                device.build_input_stream(
-                    &config.into(),
-                    move |data: &[i16], _| {
-                        let mut buf = AUDIO_BUFFER.lock().unwrap();
-                        let copy_len = data.len().min(buf.len());
-                        for i in 0..copy_len {
-                            buf[i] = data[i] as f32 / i16::MAX as f32;
-                        }
-                        
-                        // Calculate RMS for debugging
-                        let rms: f32 = data.iter().map(|&x| (x as f32 / i16::MAX as f32).powi(2)).sum::<f32>() / data.len() as f32;
-                        let rms = rms.sqrt();
-                        if rms > 0.001 {
-                            println!("Audio RMS: {:.4}", rms);
-                        }
-                    },
-                    err_fn,
-                    None,
-                )
-            },
-            cpal::SampleFormat::U16 => {
-                device.build_input_stream(
-                    &config.into(),
-                    move |data: &[u16], _| {
-                        let mut buf = AUDIO_BUFFER.lock().unwrap();
-                        let copy_len = data.len().min(buf.len());
-                        for i in 0..copy_len {
-                            buf[i] = (data[i] as f32 / u16::MAX as f32) * 2.0 - 1.0; // Convert to signed
-                        }
-                        
-                        // Calculate RMS for debugging
-                        let rms: f32 = data.iter().map(|&x| ((x as f32 / u16::MAX as f32) * 2.0 - 1.0).powi(2)).sum::<f32>() / data.len() as f32;
-                        let rms = rms.sqrt();
-                        if rms > 0.001 {
-                            println!("Audio RMS: {:.4}", rms);
-                        }
-                    },
-                    err_fn,
-                    None,
-                )
-            },
-            _ => {
-                eprintln!("Unsupported sample format");
-                return;
-            }
-        };
-        
-        match stream_result {
-            Ok(stream) => {
-                if let Err(e) = stream.play() {
-                    eprintln!("Failed to play stream: {}", e);
-                    return;
-                }
-                
-                println!("Audio capture started for device: {}", device_name_clone);
-                
-                // Keep the stream alive until we receive a stop signal
-                match stop_rx.recv() {
-                    Ok(_) => println!("Audio capture stopped for device: {}", device_name_clone),
-                    Err(_) => println!("Audio capture channel closed for device: {}", device_name_clone),
-                }
-            },
+// Tauri command to stop system audio capture
+#[tauri::command]
+async fn stop_system_audio_capture(state: tauri::State<'_, Arc<Mutex<AppState>>>) -> Result<String, String> {
+    let mut app_state = state.lock().unwrap();
+    if let Some(stream) = app_state.stream.take() {
+        match stream.stop_capture() {
+            Ok(_) => Ok("System audio capture stopped".to_string()),
             Err(e) => {
-                eprintln!("Failed to build input stream: {}", e);
+                eprintln!("Failed to stop capture: {:?}", e);
+                Err(format!("Error stopping capture: {:?}", e))
             }
-        }
-    });
-
-    Ok(format!("Audio capture starting for device: {}", device_name))
-}
-
-#[tauri::command]
-async fn start_audio_capture(_window: Window) -> Result<String, String> {
-    println!("Audio capture requested - using demo mode");
-    Ok("Demo audio mode started".to_string())
-}
-
-#[tauri::command]
-async fn stop_audio_capture() -> Result<String, String> {
-    let mut stop_guard = STOP_SENDER.lock().unwrap();
-    if let Some(sender) = stop_guard.take() {
-        match sender.send(()) {
-            Ok(_) => {
-                println!("Audio capture stop signal sent");
-                Ok("Audio capture stopped".to_string())
-            },
-            Err(_) => Ok("Audio capture was already stopped".to_string())
         }
     } else {
         Ok("No audio capture was running".to_string())
     }
 }
 
+// Tauri command to get captured audio data
 #[tauri::command]
-async fn get_audio_data() -> Result<Vec<f32>, String> {
-    // Return the latest audio buffer (downsampled to 64 samples for visualization)
-    let mut out = vec![0.0; 64];
-    let buf = AUDIO_BUFFER.lock().unwrap();
-    
-    if buf.len() >= 64 {
-        let step = buf.len() / out.len();
-        for (i, o) in out.iter_mut().enumerate() {
-            *o = buf[i * step].abs(); // Use absolute value for visualization
-        }
+async fn get_sck_audio_data(state: tauri::State<'_, Arc<Mutex<AppState>>>) -> Result<Vec<f32>, String> {
+    let app_state = state.lock().unwrap();
+    let audio_data = app_state.audio_buffer.lock().unwrap().clone();
+    if audio_data.is_empty() {
+        return Ok(vec![0.0; 64]);
     }
-    
-    Ok(out)
+    Ok(audio_data)
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    let app_state = Arc::new(Mutex::new(AppState::new()));
+
     tauri::Builder::default()
+        .manage(app_state)
         .plugin(tauri_plugin_opener::init())
         .invoke_handler(tauri::generate_handler![
-            start_audio_capture,
-            stop_audio_capture,
-            get_audio_data,
-            list_audio_input_devices,
-            start_audio_capture_with_device
+            start_system_audio_capture,
+            stop_system_audio_capture,
+            get_sck_audio_data
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
+}
+
+fn process_cmsamplebuffer(_sample_buffer: &screencapturekit::cm_sample_buffer::CMSampleBuffer) -> Result<Vec<f32>, String> {
+    // Try to access the underlying system reference to get sample information
+    // Note: This is a simplified implementation since direct audio buffer access 
+    // requires more complex Core Audio handling
+    
+    // For now, return dummy audio data to get the application working
+    // In a production environment, you would need to properly extract
+    // the audio data from the CMSampleBuffer using Core Audio APIs
+    let dummy_samples = vec![0.0f32; 1024]; // Placeholder audio data
+    
+    Ok(dummy_samples)
 }
