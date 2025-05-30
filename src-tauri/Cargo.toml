@@ -23,7 +23,9 @@ tauri-plugin-opener = "2"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 screencapturekit = "0.2.8"
-core-media-rs = "0.3"
-core-foundation = "0.9"
-core-audio-types = "0.1"
+core-media = "0.5.1"
+core-audio-types = "0.1.5"
+core-foundation = "0.10"
+libc = "0.2"
+screencapturekit-sys = "0.2.8"
 

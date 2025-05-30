@@ -198,14 +198,21 @@ class AudioVisualizer {
       document.getElementById('status').textContent = 'Starting audio capture...';
       console.log('Starting audio capture...');
       if (typeof window.__TAURI__ === 'undefined') {
-        throw new Error('Tauri not available - running in browser mode with mock data');
+        console.error('Tauri API not found. Running in browser?');
+        document.getElementById('status').textContent = 'Error: Tauri API not available.';
+        this.startMockAudioData();
+        return true; // Keep as true to allow mock data to run
       }
       const { invoke } = window.__TAURI__.core;
-      const device = document.getElementById('audio-device-select').value;
-      const result = await invoke('start_audio_capture_with_device', { deviceName: device });
+      const result = await invoke('start_system_audio_capture'); 
       console.log('Audio capture result:', result);
       document.getElementById('status').textContent = 'Audio capture active!';
       this.startAudioDataPolling();
+      this.isPlaying = true; // Set isPlaying to true
+      document.getElementById('start-btn').disabled = true;
+      document.getElementById('stop-btn').disabled = false;
+      document.getElementById('test-btn').disabled = true;
+
       return true;
     } catch (error) {
       console.error('Error starting audio:', error);
@@ -220,10 +227,14 @@ class AudioVisualizer {
     
     this.audioDataInterval = setInterval(async () => {
       try {
-        const audioData = await invoke('get_audio_data');
-        this.processAudioData(audioData);
+        const audioData = await invoke('get_sck_audio_data');
+        if (audioData && audioData.length > 0) {
+          this.processAudioData(audioData);
+        } else {
+          // Handle empty or null data if necessary, or keep using last valid data
+        }
       } catch (error) {
-        console.error('Error getting audio data:', error);
+        console.error('Error fetching audio data:', error);
       }
     }, 16); // ~60 FPS
   }
@@ -526,10 +537,11 @@ class AudioVisualizer {
     try {
       if (typeof window.__TAURI__ !== 'undefined') {
         const { invoke } = window.__TAURI__.core;
-        await invoke('stop_audio_capture');
+        await invoke('stop_system_audio_capture');
+        console.log('Audio capture stopped via backend.');
       }
     } catch (error) {
-      console.error('Error stopping audio capture:', error);
+      console.error('Error stopping audio capture via backend:', error);
     }
     
     if (this.audioDataInterval) {
