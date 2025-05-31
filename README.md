@@ -11,13 +11,10 @@
 
 ## Tech Stack
 
-- Tauri (Rust backend, desktop app shell)
-- Vite (Frontend tooling)
-- Three.js (3D WebGL visualizations)
-- JavaScript/HTML/CSS (UI)
-- Rust (Audio capture and processing, Swift interop)
+- Rust (Tauri)
+- C (FFI bridge for Swift-Rust interoperability)
 - Swift (macOS audio and screen capture via [ScreenCaptureKit](https://developer.apple.com/documentation/screencapturekit/))
-- C (Objective-C bridging for Swift-Rust interop)
+- Three.js (3D WebGL visualizations)
 - macOS support
 
 ## Usage
