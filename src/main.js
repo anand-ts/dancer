@@ -1,157 +1,247 @@
-class SimpleWaveformVisualizer {
+// Import configuration
+import { AUDIO_CONFIG, VISUAL_CONFIG, STATUS_MESSAGES, DOM_ELEMENTS } from './config.js';
+
+// DOM element cache
+class DOMCache {
   constructor() {
-    this.canvas = document.getElementById('waveform-canvas');
-    this.ctx = this.canvas.getContext('2d');
-    this.audioPlayer = document.getElementById('audio-player');
-    
+    this.elements = {
+      canvas: document.getElementById(DOM_ELEMENTS.CANVAS),
+      audioPlayer: document.getElementById(DOM_ELEMENTS.AUDIO_PLAYER),
+      playButton: document.getElementById(DOM_ELEMENTS.PLAY_BUTTON),
+      status: document.getElementById(DOM_ELEMENTS.STATUS),
+      levelFill: document.getElementById(DOM_ELEMENTS.LEVEL_FILL),
+      levelText: document.getElementById(DOM_ELEMENTS.LEVEL_TEXT)
+    };
+  }
+
+  get(elementName) {
+    return this.elements[elementName];
+  }
+}
+
+// Status manager for consistent UI updates
+class StatusManager {
+  constructor(domCache) {
+    this.statusElement = domCache.get('status');
+    this.levelFillElement = domCache.get('levelFill');
+    this.levelTextElement = domCache.get('levelText');
+  }
+
+  setStatus(message) {
+    this.statusElement.textContent = message;
+    console.log('Status:', message);
+  }
+
+  updateAudioLevel(percentage) {
+    this.levelFillElement.style.width = percentage + '%';
+    this.levelTextElement.textContent = percentage;
+  }
+
+  resetAudioLevel() {
+    this.updateAudioLevel(0);
+  }
+}
+
+// Audio system manager
+class AudioManager {
+  constructor(domCache, statusManager) {
+    this.audioPlayer = domCache.get('audioPlayer');
+    this.playButton = domCache.get('playButton');
+    this.statusManager = statusManager;
     this.audioContext = null;
     this.analyser = null;
     this.audioSource = null;
     this.frequencyData = null;
-    
-    this.animationId = null;
-    
-    // Make canvas responsive to window size
-    this.resizeCanvas();
-    window.addEventListener('resize', () => this.resizeCanvas());
-    
-    this.init();
   }
 
-  resizeCanvas() {
-    this.canvas.width = window.innerWidth;
-    this.canvas.height = window.innerHeight;
+  setupEventListeners(onPlay, onPause) {
+    this.audioPlayer.addEventListener('play', onPlay);
+    this.audioPlayer.addEventListener('pause', onPause);
     
-    // Redraw if not currently visualizing
-    if (this.audioPlayer.paused) {
-      this.drawStaticWaveform();
-    }
+    // Custom play button functionality
+    this.playButton.addEventListener('click', () => {
+      if (this.audioPlayer.paused) {
+        this.audioPlayer.play();
+        this.playButton.textContent = '⏸ PAUSE';
+      } else {
+        this.audioPlayer.pause();
+        this.playButton.textContent = '▶ PLAY';
+      }
+    });
+    
+    // Update button text based on audio state
+    this.audioPlayer.addEventListener('play', () => {
+      this.playButton.textContent = '⏸ PAUSE';
+    });
+    
+    this.audioPlayer.addEventListener('pause', () => {
+      this.playButton.textContent = '▶ PLAY';
+    });
+    
+    this.audioPlayer.addEventListener('loadstart', () => {
+      this.statusManager.setStatus(STATUS_MESSAGES.LOADING);
+    });
+    
+    this.audioPlayer.addEventListener('canplay', () => {
+      this.statusManager.setStatus(STATUS_MESSAGES.READY);
+    });
+    
+    this.audioPlayer.addEventListener('loadeddata', () => {
+      this.statusManager.setStatus(STATUS_MESSAGES.LOADED);
+    });
+    
+    this.audioPlayer.addEventListener('error', (e) => {
+      this.handleAudioError(e);
+    });
+    
+    this.audioPlayer.addEventListener('click', () => {
+      console.log('Audio player clicked - user interaction registered');
+    });
+    
+    this.audioPlayer.addEventListener('progress', () => {
+      console.log('Audio loading progress');
+    });
   }
 
-  async init() {
+  handleAudioError(e) {
+    console.error('Audio error:', e);
+    console.error('Audio error details:', this.audioPlayer.error);
+    
+    const errorMsg = this.audioPlayer.error ? 
+      `Audio error (${this.audioPlayer.error.code}): ${this.audioPlayer.error.message || 'Unknown error'}` :
+      'Audio file not found or cannot be loaded';
+    
+    this.statusManager.setStatus(errorMsg);
+  }
+
+  async setupAudioContext() {
     try {
-      // Set up audio context when user interacts with audio
-      this.audioPlayer.addEventListener('play', () => {
-        console.log('Play event triggered');
-        this.setupAudio();
-      });
-      this.audioPlayer.addEventListener('pause', () => {
-        console.log('Pause event triggered');
-        this.stopVisualization();
-      });
-      
-      // Add error handling for audio loading
-      this.audioPlayer.addEventListener('loadstart', () => {
-        console.log('Started loading audio');
-        document.getElementById('status').textContent = 'Loading audio...';
-      });
-      
-      this.audioPlayer.addEventListener('canplay', () => {
-        console.log('Audio can start playing');
-        document.getElementById('status').textContent = 'Ready - Press play to start visualization';
-      });
-      
-      this.audioPlayer.addEventListener('error', (e) => {
-        console.error('Audio error:', e);
-        document.getElementById('status').textContent = 'Error loading audio file';
-      });
-      
-      // Add click handler to help with user interaction requirement
-      this.audioPlayer.addEventListener('click', () => {
-        console.log('Audio player clicked');
-      });
-      
-      // Start with a simple static display
-      this.drawStaticWaveform();
-      
-      document.getElementById('status').textContent = 'Initializing...';
-    } catch (error) {
-      console.error('Initialization error:', error);
-      document.getElementById('status').textContent = 'Error: ' + error.message;
-    }
-  }
-
-  async setupAudio() {
-    try {
-      console.log('Setting up audio context...');
-      
       if (!this.audioContext) {
+        console.log('Setting up audio context...');
+        
         // Create audio context
         this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
         console.log('Audio context created');
         
-        // Create analyser
+        // Create and configure analyser
         this.analyser = this.audioContext.createAnalyser();
-        this.analyser.fftSize = 256;
+        this.analyser.fftSize = AUDIO_CONFIG.FFT_SIZE;
+        this.analyser.smoothingTimeConstant = AUDIO_CONFIG.SMOOTHING;
         this.frequencyData = new Uint8Array(this.analyser.frequencyBinCount);
         console.log('Analyser created');
         
-        // Create audio source from the audio element
+        // Create and connect audio source
         this.audioSource = this.audioContext.createMediaElementSource(this.audioPlayer);
-        console.log('Audio source created');
-        
-        // Connect: source -> analyser -> destination
         this.audioSource.connect(this.analyser);
         this.analyser.connect(this.audioContext.destination);
         console.log('Audio nodes connected');
       }
       
-      // Resume context if suspended (required for some browsers)
+      // Resume context if suspended
       if (this.audioContext.state === 'suspended') {
         await this.audioContext.resume();
         console.log('Audio context resumed');
       }
       
-      // Start visualization
-      this.startVisualization();
-      document.getElementById('status').textContent = 'Visualizing audio...';
-      
+      this.statusManager.setStatus(STATUS_MESSAGES.VISUALIZING);
+      return true;
     } catch (error) {
       console.error('Audio setup error:', error);
-      document.getElementById('status').textContent = 'Audio error: ' + error.message;
+      this.statusManager.setStatus('Audio error: ' + error.message);
+      return false;
     }
   }
 
-  startVisualization() {
-    const draw = () => {
-      if (this.audioPlayer.paused) return;
-      
-      // Get frequency data
+  getFrequencyData() {
+    if (this.analyser && this.frequencyData) {
       this.analyser.getByteFrequencyData(this.frequencyData);
+      return this.frequencyData;
+    }
+    return null;
+  }
+
+  calculateAudioLevel() {
+    if (!this.frequencyData) return 0;
+    const avgLevel = this.frequencyData.reduce((sum, val) => sum + val, 0) / this.frequencyData.length;
+    return Math.round((avgLevel / 255) * 100);
+  }
+
+  isPaused() {
+    return this.audioPlayer.paused;
+  }
+}
+
+// Visualization renderer
+class VisualizationRenderer {
+  constructor(domCache, statusManager) {
+    this.canvas = domCache.get('canvas');
+    this.ctx = this.canvas.getContext('2d');
+    this.statusManager = statusManager;
+    this.animationId = null;
+    
+    // Make canvas responsive
+    this.resizeCanvas();
+    window.addEventListener('resize', () => this.resizeCanvas());
+  }
+
+  resizeCanvas() {
+    this.canvas.width = window.innerWidth;
+    this.canvas.height = window.innerHeight;
+  }
+
+  startVisualization(audioManager) {
+    const draw = () => {
+      if (audioManager.isPaused()) return;
       
-      // Clear canvas
-      this.ctx.fillStyle = '#000';
-      this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+      const frequencyData = audioManager.getFrequencyData();
+      if (!frequencyData) return;
       
-      // Draw frequency bars
-      const barWidth = this.canvas.width / this.frequencyData.length;
-      
-      for (let i = 0; i < this.frequencyData.length; i++) {
-        const barHeight = (this.frequencyData[i] / 255) * this.canvas.height;
-        
-        // Create gradient color based on frequency
-        const hue = (i / this.frequencyData.length) * 360;
-        this.ctx.fillStyle = `hsl(${hue}, 70%, 50%)`;
-        
-        // Draw bar
-        this.ctx.fillRect(
-          i * barWidth, 
-          this.canvas.height - barHeight, 
-          barWidth - 1, 
-          barHeight
-        );
-      }
-      
-      // Update audio level display
-      const avgLevel = this.frequencyData.reduce((sum, val) => sum + val, 0) / this.frequencyData.length;
-      const levelPercent = Math.round((avgLevel / 255) * 100);
-      document.getElementById('level-fill').style.width = levelPercent + '%';
-      document.getElementById('level-text').textContent = levelPercent;
+      this.renderFrequencyBars(frequencyData);
+      this.statusManager.updateAudioLevel(audioManager.calculateAudioLevel());
       
       this.animationId = requestAnimationFrame(draw);
     };
     
     draw();
+  }
+
+  renderFrequencyBars(frequencyData) {
+    // Clear canvas
+    this.ctx.fillStyle = '#000';
+    this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+    
+    const usefulBins = Math.floor(frequencyData.length * AUDIO_CONFIG.FREQUENCY_CUTOFF);
+    const barWidth = this.canvas.width / usefulBins;
+    const maxHeight = this.canvas.height * AUDIO_CONFIG.HEIGHT_MARGIN;
+    
+    for (let i = 0; i < usefulBins; i++) {
+      this.renderSingleBar(i, usefulBins, frequencyData, barWidth, maxHeight);
+    }
+  }
+
+  renderSingleBar(index, totalBins, frequencyData, barWidth, maxHeight) {
+    // Apply logarithmic scaling for better visual distribution
+    const scaledIndex = Math.floor(Math.pow(index / totalBins, 0.5) * frequencyData.length);
+    const value = frequencyData[scaledIndex];
+    
+    // Calculate bar properties
+    const normalizedValue = Math.max(value / 255, AUDIO_CONFIG.MIN_THRESHOLD);
+    const barHeight = normalizedValue * maxHeight;
+    
+    // Generate color based on frequency and amplitude
+    const hue = (index / totalBins) * VISUAL_CONFIG.HUE_RANGE;
+    const saturation = VISUAL_CONFIG.BASE_SATURATION + (normalizedValue * VISUAL_CONFIG.SATURATION_RANGE);
+    const lightness = VISUAL_CONFIG.BASE_LIGHTNESS + (normalizedValue * VISUAL_CONFIG.LIGHTNESS_RANGE);
+    
+    this.ctx.fillStyle = `hsl(${hue}, ${saturation}%, ${lightness}%)`;
+    
+    // Draw bar from bottom up
+    this.ctx.fillRect(
+      index * barWidth,
+      this.canvas.height - barHeight,
+      barWidth - VISUAL_CONFIG.BAR_GAP,
+      barHeight
+    );
   }
 
   stopVisualization() {
@@ -160,39 +250,63 @@ class SimpleWaveformVisualizer {
       this.animationId = null;
     }
     
-    // Reset display
     this.drawStaticWaveform();
-    document.getElementById('level-fill').style.width = '0%';
-    document.getElementById('level-text').textContent = '0';
-    document.getElementById('status').textContent = 'Paused';
+    this.statusManager.resetAudioLevel();
+    this.statusManager.setStatus(STATUS_MESSAGES.PAUSED);
   }
 
   drawStaticWaveform() {
-    // Draw a simple static waveform pattern
     this.ctx.fillStyle = '#000';
     this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+  }
+}
+
+// Main application class
+class WaveformVisualizer {
+  constructor() {
+    this.domCache = new DOMCache();
+    this.statusManager = new StatusManager(this.domCache);
+    this.audioManager = new AudioManager(this.domCache, this.statusManager);
+    this.renderer = new VisualizationRenderer(this.domCache, this.statusManager);
     
-    this.ctx.strokeStyle = '#333';
-    this.ctx.lineWidth = 2;
-    this.ctx.beginPath();
-    
-    const centerY = this.canvas.height / 2;
-    for (let x = 0; x < this.canvas.width; x += 4) {
-      const y = centerY + Math.sin(x * 0.02) * 20;
-      if (x === 0) {
-        this.ctx.moveTo(x, y);
-      } else {
-        this.ctx.lineTo(x, y);
-      }
+    this.init();
+  }
+
+  async init() {
+    try {
+      // Set up audio event listeners
+      this.audioManager.setupEventListeners(
+        () => this.handlePlay(),
+        () => this.handlePause()
+      );
+      
+      // Initialize with static display
+      this.renderer.drawStaticWaveform();
+      this.statusManager.setStatus(STATUS_MESSAGES.LOADING);
+      
+    } catch (error) {
+      console.error('Initialization error:', error);
+      this.statusManager.setStatus('Error: ' + error.message);
     }
-    this.ctx.stroke();
+  }
+
+  async handlePlay() {
+    console.log('Play event triggered');
+    const audioSetupSuccess = await this.audioManager.setupAudioContext();
+    
+    if (audioSetupSuccess) {
+      this.renderer.startVisualization(this.audioManager);
+    }
+  }
+
+  handlePause() {
+    console.log('Pause event triggered');
+    this.renderer.stopVisualization();
   }
 }
 
 // Initialize when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
-  console.log('Initializing Simple Waveform Visualizer...');
-  new SimpleWaveformVisualizer();
+  console.log('Initializing Waveform Visualizer...');
+  new WaveformVisualizer();
 });
-
-// Remove all the old complex code below this line

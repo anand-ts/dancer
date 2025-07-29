@@ -62,5 +62,5 @@ src-tauri/gen/
 *.tmp
 audio_data/
 
-INSTRUCTIONS.md
+# Development guidelines (private)
 CLAUDE.md

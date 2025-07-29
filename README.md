@@ -43,10 +43,31 @@ Open http://localhost:5174/ and press play to start visualizing!
 ```
 src/
 ├── index.html          # Main HTML with audio controls
-├── main.js            # SimpleWaveformVisualizer class
-├── styles.css         # Full-screen canvas + control styling
-└── public/            # Static assets (audio files)
+├── main.js            # Modular visualizer components
+├── config.js          # Configuration constants
+├── styles.css         # CSS with custom properties
+└── assets/
+    └── Cult Member - Faygo.m4a  # Audio file
+
+public/
+└── dancer.gif         # Demo GIF for README
+
+Root files:
+├── CLAUDE.md          # Development guidelines and project context
+├── README.md          # Project documentation
+├── package.json       # Dependencies and scripts
+└── vite.config.js     # Vite configuration
 ```
+
+## 🏗️ Architecture
+
+The application is built with a modular, object-oriented architecture:
+
+- **`WaveformVisualizer`** - Main application controller
+- **`AudioManager`** - Handles Web Audio API and audio events
+- **`VisualizationRenderer`** - Canvas rendering and animations
+- **`StatusManager`** - UI state and feedback management
+- **`DOMCache`** - Efficient DOM element caching
 
 ## 🎶 Supported Audio
 
