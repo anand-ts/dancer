@@ -9,6 +9,11 @@ use screencapturekit_sys::as_ptr::AsPtr;
 
 use core_audio_types::base_types::AudioBufferList;
 
+// Constants for audio processing
+const MAX_AUDIO_BUFFER_SAMPLES: usize = 44100 * 5; // 5 seconds at 44.1kHz
+const DEFAULT_SILENCE_SAMPLES: usize = 64;
+const CORE_MEDIA_SUCCESS: i32 = 0;
+
 #[link(name = "CoreMedia", kind = "framework")]
 extern "C" {
     fn CMSampleBufferGetAudioBufferListWithRetainedBlockBuffer(
@@ -37,6 +42,40 @@ impl AppState {
     }
 }
 
+/// Handles audio stream output from ScreenCaptureKit
+struct AudioStreamOutput {
+    audio_buffer: Arc<Mutex<Vec<f32>>>,
+}
+
+impl screencapturekit::sc_output_handler::StreamOutput for AudioStreamOutput {
+    fn did_output_sample_buffer(&self, sample_buffer: screencapturekit::cm_sample_buffer::CMSampleBuffer, of_type: SCStreamOutputType) {
+        if matches!(of_type, SCStreamOutputType::Audio) {
+            match process_cmsamplebuffer(sample_buffer) {
+                Some(audio_data) => {
+                    let mut buffer = self.audio_buffer.lock().unwrap();
+                    buffer.extend(audio_data);
+                    if buffer.len() > MAX_AUDIO_BUFFER_SAMPLES {
+                        let overflow = buffer.len() - MAX_AUDIO_BUFFER_SAMPLES;
+                        buffer.drain(0..overflow);
+                    }
+                }
+                None => {
+                    eprintln!("Error processing audio sample buffer");
+                }
+            }
+        }
+    }
+}
+
+/// Handles stream errors from ScreenCaptureKit
+struct AudioStreamErrorHandler;
+
+impl StreamErrorHandler for AudioStreamErrorHandler {
+    fn on_error(&self) {
+        eprintln!("Audio stream error occurred");
+    }
+}
+
 #[tauri::command]
 async fn start_system_audio_capture(state: tauri::State<'_, Arc<Mutex<AppState>>>) -> Result<String, String> {
     let content = SCShareableContent::current();
@@ -61,40 +100,11 @@ async fn start_system_audio_capture(state: tauri::State<'_, Arc<Mutex<AppState>>
 
     let audio_buffer_clone = Arc::clone(&app_state.audio_buffer);
 
-    struct MyStreamOutput {
-        audio_buffer: Arc<Mutex<Vec<f32>>>,
-    }
-    impl screencapturekit::sc_output_handler::StreamOutput for MyStreamOutput {
-        fn did_output_sample_buffer(&self, sample_buffer: screencapturekit::cm_sample_buffer::CMSampleBuffer, of_type: SCStreamOutputType) {
-            if matches!(of_type, SCStreamOutputType::Audio) {
-                match process_cmsamplebuffer(sample_buffer) {
-                    Some(audio_data) => {
-                        let mut buffer = self.audio_buffer.lock().unwrap();
-                        buffer.extend(audio_data);
-                        const MAX_SAMPLES: usize = 44100 * 5; 
-                        if buffer.len() > MAX_SAMPLES {
-                            let overflow = buffer.len() - MAX_SAMPLES;
-                            buffer.drain(0..overflow);
-                        }
-                    }
-                    None => {
-                        eprintln!("Error processing audio sample buffer");
-                    }
-                }
-            }
-        }
-    }
-    
-    let stream_output_handler = MyStreamOutput { audio_buffer: audio_buffer_clone };
+    let stream_output_handler = AudioStreamOutput { 
+        audio_buffer: audio_buffer_clone 
+    };
 
-    struct MyErrorHandler;
-    impl StreamErrorHandler for MyErrorHandler {
-        fn on_error(&self) {
-            eprintln!("Stream error occurred");
-        }
-    }
-
-    let mut stream = SCStream::new(filter, config, MyErrorHandler);
+    let mut stream = SCStream::new(filter, config, AudioStreamErrorHandler);
     stream.add_output(stream_output_handler, SCStreamOutputType::Audio);
     
     match stream.start_capture() {
@@ -130,7 +140,7 @@ async fn get_sck_audio_data(state: tauri::State<'_, Arc<Mutex<AppState>>>) -> Re
     let app_state = state.lock().unwrap();
     let audio_data = app_state.audio_buffer.lock().unwrap().clone();
     if audio_data.is_empty() {
-        return Ok(vec![0.0; 64]);
+        return Ok(vec![0.0; DEFAULT_SILENCE_SAMPLES]);
     }
     Ok(audio_data)
 }
@@ -151,9 +161,12 @@ pub fn run() {
         .expect("error while running tauri application");
 }
 
+/// Processes CoreMedia sample buffer and extracts audio data as f32 samples
 fn process_cmsamplebuffer(sample_buffer: screencapturekit::cm_sample_buffer::CMSampleBuffer) -> Option<Vec<f32>> {
     let raw = sample_buffer.sys_ref.as_ptr() as *mut std::ffi::c_void;
-    if raw.is_null() { return None; }
+    if raw.is_null() { 
+        return None; 
+    }
 
     let mut abl = AudioBufferList::default();
     let mut blk_ref: *mut std::ffi::c_void = std::ptr::null_mut();
@@ -170,20 +183,27 @@ fn process_cmsamplebuffer(sample_buffer: screencapturekit::cm_sample_buffer::CMS
             &mut blk_ref,
         )
     };
-    if status != 0 {
+    
+    if status != CORE_MEDIA_SUCCESS {
         return None;
     }
 
-    let mut all = Vec::new();
-    let count = abl.mNumberBuffers as usize;
-    let bufs_ptr = abl.mBuffers.as_ptr() as *const core_audio_types::base_types::AudioBuffer;
-    for i in 0..count {
-        let buf = unsafe { &*bufs_ptr.add(i) };
-        if buf.mData.is_null() { continue; }
-        let n = buf.mDataByteSize as usize / std::mem::size_of::<f32>();
-        let slice = unsafe { std::slice::from_raw_parts(buf.mData as *const f32, n) };
-        all.extend_from_slice(slice);
+    let mut audio_samples = Vec::new();
+    let buffer_count = abl.mNumberBuffers as usize;
+    let buffers_ptr = abl.mBuffers.as_ptr() as *const core_audio_types::base_types::AudioBuffer;
+    
+    for i in 0..buffer_count {
+        let buffer = unsafe { &*buffers_ptr.add(i) };
+        if buffer.mData.is_null() { 
+            continue; 
+        }
+        
+        let sample_count = buffer.mDataByteSize as usize / std::mem::size_of::<f32>();
+        let samples = unsafe { 
+            std::slice::from_raw_parts(buffer.mData as *const f32, sample_count) 
+        };
+        audio_samples.extend_from_slice(samples);
     }
 
-    Some(all)
+    Some(audio_samples)
 }

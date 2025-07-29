@@ -61,3 +61,6 @@ src-tauri/gen/
 *.mp3
 *.tmp
 audio_data/
+
+INSTRUCTIONS.md
+CLAUDE.md

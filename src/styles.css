@@ -19,7 +19,11 @@
 }
 
 body {
-  background-color: #ffffff;
+  margin: 0;
+  padding: 0;
+  background: #000;
+  font-family: Arial, sans-serif;
+  height: 100vh;
   overflow: hidden;
 }
 
@@ -29,28 +33,119 @@ body {
   height: 100vh;
 }
 
-#three-canvas {
+#waveform-canvas {
   position: absolute;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
-  display: block;
-  z-index: 1;
-  background: #000011;
+  background: #000;
 }
 
 #controls {
-  position: absolute;
+  position: fixed;
   top: 20px;
   left: 20px;
-  z-index: 100;
-  background: rgba(255, 255, 255, 0.95);
-  padding: 20px;
+  background: rgba(0, 0, 0, 0.8);
   border-radius: 10px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  padding: 15px;
+  min-width: 280px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
   backdrop-filter: blur(10px);
-  max-width: 280px;
+  z-index: 1000;
+  color: #fff;
+}
+
+#audio-controls {
+  margin-bottom: 20px;
+}
+
+#audio-player {
+  width: 100%;
+  margin-bottom: 10px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 5px;
+}
+
+#audio-player::-webkit-media-controls-panel {
+  background-color: rgba(0, 0, 0, 0.8);
+}
+
+#audio-player::-webkit-media-controls-play-button,
+#audio-player::-webkit-media-controls-pause-button {
+  background-color: rgba(255, 255, 255, 0.9);
+  border-radius: 50%;
+}
+
+#theme-selector {
+  margin-bottom: 20px;
+}
+
+#theme-selector label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: bold;
+  color: #333;
+}
+
+#theme-select {
+  width: 100%;
+  padding: 8px;
+  border: 2px solid #ddd;
+  border-radius: 5px;
+  background: white;
+  color: #333;
+  font-size: 14px;
+}
+
+#audio-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+#audio-controls button {
+  padding: 12px 20px;
+  border: none;
+  border-radius: 25px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: bold;
+  transition: all 0.3s ease;
+  background: linear-gradient(45deg, #677eea, #4facfe);
+  color: white;
+}
+
+#audio-controls button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(103, 126, 234, 0.3);
+}
+
+#audio-controls button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+#track-info {
+  text-align: center;
+  font-size: 12px;
+  color: #ccc;
+  font-style: italic;
+  padding: 8px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 5px;
+}
+
+#status {
+  margin-bottom: 15px;
+  padding: 8px;
+  text-align: center;
+  border-radius: 5px;
+  font-size: 12px;
+  background: rgba(76, 175, 80, 0.2);
+  color: #4caf50;
 }
 
 #theme-selector {
@@ -104,12 +199,13 @@ button:disabled {
 #audio-level {
   margin-top: 15px;
   font-size: 12px;
+  color: #fff;
 }
 
 #level-bar {
   width: 200px;
   height: 10px;
-  background: #eee;
+  background: rgba(255, 255, 255, 0.2);
   border-radius: 5px;
   margin: 5px 0;
   overflow: hidden;
@@ -124,7 +220,7 @@ button:disabled {
 
 #level-text {
   font-weight: bold;
-  color: #333;
+  color: #0ff;
 }
 
 #instructions {
@@ -135,4 +231,94 @@ button:disabled {
   font-size: 11px;
   line-height: 1.4;
   color: #555;
+}
+
+/* Audio mode selector styles */
+#audio-mode-selector {
+  margin-bottom: 15px;
+}
+
+#audio-mode-selector label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: bold;
+  color: #333;
+}
+
+#mode-buttons {
+  display: flex;
+  gap: 5px;
+  margin-bottom: 10px;
+}
+
+.mode-btn {
+  padding: 8px 15px;
+  border: 2px solid #677eea;
+  background: transparent;
+  color: #677eea;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 12px;
+  transition: all 0.3s ease;
+}
+
+.mode-btn:hover {
+  background: rgba(103, 126, 234, 0.1);
+}
+
+.mode-btn.active {
+  background: #677eea;
+  color: white;
+}
+
+/* Test track controls styles */
+#test-track-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 10px;
+  background: rgba(103, 126, 234, 0.05);
+  border-radius: 5px;
+  border: 1px solid rgba(103, 126, 234, 0.2);
+}
+
+#test-track-controls button {
+  padding: 10px 15px;
+  border: 2px solid #4CAF50;
+  background: transparent;
+  color: #4CAF50;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 13px;
+  transition: all 0.3s ease;
+}
+
+#test-track-controls button:hover {
+  background: rgba(76, 175, 80, 0.1);
+}
+
+#test-track-controls button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+#test-track-controls button:not(:disabled):active {
+  background: #4CAF50;
+  color: white;
+}
+
+#track-info {
+  text-align: center;
+  font-size: 12px;
+  color: #666;
+  font-style: italic;
+  padding: 5px;
+  background: rgba(255, 255, 255, 0.7);
+  border-radius: 3px;
+}
+
+#system-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }

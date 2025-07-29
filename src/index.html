@@ -10,24 +10,16 @@
 
   <body>
     <div id="container">
-      <canvas id="three-canvas" width="800" height="600"></canvas>
+      <canvas id="waveform-canvas"></canvas>
       <div id="controls">
-        <div id="theme-selector">
-          <label for="theme-select">Theme:</label>
-          <select id="theme-select">
-            <option value="matrix">Matrix (Green Sphere)</option>
-            <option value="rainbow">Rainbow (Colorful Cubes)</option>
-          </select>
+        <div id="audio-controls">
+          <audio id="audio-player" controls preload="auto">
+            <source src="/Cult Member - Faygo.m4a" type="audio/mp4">
+            Your browser does not support the audio element.
+          </audio>
+          <div id="track-info">♪ Cult Member - Faygo</div>
         </div>
-        <div id="device-selector">
-          <label for="audio-device-select">Audio Input:</label>
-          <select id="audio-device-select">
-            <option>Loading...</option>
-          </select>
-        </div>
-        <button id="start-btn">Start System Audio</button>
-        <button id="stop-btn" disabled>Stop</button>
-        <button id="test-btn">Demo Mode</button>
+        
         <div id="status"></div>
         <div id="audio-level">
           <div>Audio Level:</div>
@@ -36,7 +28,6 @@
           </div>
           <div id="level-text">0</div>
         </div>
-        <div id="instructions"></div>
       </div>
     </div>
   </body>
