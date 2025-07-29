@@ -1,24 +1,65 @@
-# Dancer: Audio Visualizer Desktop App
-> This project is a W.I.P
+# Dancer - Web Audio Visualizer
+
+A simple, elegant music visualizer built with **Web Audio API** and **HTML5 Canvas**. Features real-time frequency visualization with colorful bars that dance to your music.
 
 <p align="center">
   <img src="public/dancer.gif" alt="Dancer Visualizer Demo" width="500" />
   <br/>
-  <em style="font-size:1.1em; color:#4caf50;">Theme shown: Matrix (Green Wireframe Sphere)</em>
+  <em style="font-size:1.1em; color:#4caf50;">Real-time frequency bars with Web Audio API</em>
 </p>
 
-**Dancer** is a macOS desktop audio visualizer built with Tauri, Vite, Three.js, and Swift using [ScreenCaptureKit](https://developer.apple.com/documentation/screencapturekit/). It features real-time 3D visualizations that react to your system's audio.
+## 🎵 Current Solution
 
-## Tech Stack
+**Frontend-only approach** using modern web technologies:
 
-- Rust (Tauri)
-- C (FFI bridge for Swift-Rust interoperability)
-- Swift (macOS audio and screen capture via [ScreenCaptureKit](https://developer.apple.com/documentation/screencapturekit/))
-- Three.js (3D WebGL visualizations)
-- macOS support
+- **HTML5 Audio API** - Native browser audio playback
+- **Web Audio API** - Real-time frequency analysis  
+- **2D Canvas API** - Smooth frequency bar visualization
+- **Vite** - Fast development and build tool
+- **Pure JavaScript** - No complex frameworks needed
 
-## Usage
-Run `npm run dev` for frontend development, and `npm run tauri dev` to launch the desktop app.
+## 🚀 Features
+
+- **Full-screen visualizer** with frequency bars
+- **Top-left control panel** with audio controls
+- **Real-time audio level meter**
+- **Responsive design** that adapts to window size
+- **Hot reload** development experience
+
+## 🛠️ Development
+
+```bash
+# Install dependencies
+npm install
+
+# Start development server
+npm run dev
+```
+
+Open http://localhost:5174/ and press play to start visualizing!
+
+## 📁 Project Structure
+
+```
+src/
+├── index.html          # Main HTML with audio controls
+├── main.js            # SimpleWaveformVisualizer class
+├── styles.css         # Full-screen canvas + control styling
+└── public/            # Static assets (audio files)
+```
+
+## 🎶 Supported Audio
+
+Place your music files in `src/public/` directory. Currently configured for:
+- **Cult Member - Faygo.m4a** (test track included)
+
+## 🔧 Technical Details
+
+- Uses `createMediaElementSource()` to connect HTML5 audio to Web Audio API
+- `AnalyserNode` with FFT size of 256 for frequency analysis
+- Canvas renders 128 frequency bars with HSL color gradients
+- Responsive canvas sizing with `window.innerWidth/innerHeight`
 
 ---
-Spring 2025
+
+*Simplified from previous complex ScreenCaptureKit + Tauri approach to clean Web Audio solution.*
