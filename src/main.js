@@ -1,6 +1,61 @@
 // Import configuration
 import { AUDIO_CONFIG, VISUAL_CONFIG, STATUS_MESSAGES, DOM_ELEMENTS } from './config.js';
 
+// Drag handler for making elements draggable
+class DragHandler {
+  constructor(element) {
+    this.element = element;
+    this.isDragging = false;
+    this.dragOffset = { x: 0, y: 0 };
+    
+    this.setupDragEvents();
+  }
+  
+  setupDragEvents() {
+    this.element.addEventListener('mousedown', (e) => this.startDrag(e));
+    document.addEventListener('mousemove', (e) => this.drag(e));
+    document.addEventListener('mouseup', () => this.stopDrag());
+    
+    // Add visual indication that element is draggable
+    this.element.style.cursor = 'move';
+  }
+  
+  startDrag(e) {
+    this.isDragging = true;
+    const rect = this.element.getBoundingClientRect();
+    this.dragOffset.x = e.clientX - rect.left;
+    this.dragOffset.y = e.clientY - rect.top;
+    
+    // Add dragging class for visual feedback
+    this.element.classList.add('dragging');
+    e.preventDefault();
+  }
+  
+  drag(e) {
+    if (!this.isDragging) return;
+    
+    const x = e.clientX - this.dragOffset.x;
+    const y = e.clientY - this.dragOffset.y;
+    
+    // Keep element within viewport bounds
+    const maxX = window.innerWidth - this.element.offsetWidth;
+    const maxY = window.innerHeight - this.element.offsetHeight;
+    
+    const boundedX = Math.max(0, Math.min(x, maxX));
+    const boundedY = Math.max(0, Math.min(y, maxY));
+    
+    this.element.style.left = boundedX + 'px';
+    this.element.style.top = boundedY + 'px';
+  }
+  
+  stopDrag() {
+    if (this.isDragging) {
+      this.isDragging = false;
+      this.element.classList.remove('dragging');
+    }
+  }
+}
+
 // DOM element cache
 class DOMCache {
   constructor() {
@@ -10,7 +65,8 @@ class DOMCache {
       playButton: document.getElementById(DOM_ELEMENTS.PLAY_BUTTON),
       status: document.getElementById(DOM_ELEMENTS.STATUS),
       levelFill: document.getElementById(DOM_ELEMENTS.LEVEL_FILL),
-      levelText: document.getElementById(DOM_ELEMENTS.LEVEL_TEXT)
+      levelText: document.getElementById(DOM_ELEMENTS.LEVEL_TEXT),
+      controls: document.getElementById('controls')
     };
   }
 
@@ -271,6 +327,9 @@ class WaveformVisualizer {
     this.statusManager = new StatusManager(this.domCache);
     this.audioManager = new AudioManager(this.domCache, this.statusManager);
     this.renderer = new VisualizationRenderer(this.domCache, this.statusManager);
+    
+    // Make controls draggable
+    this.dragHandler = new DragHandler(this.domCache.get('controls'));
     
     this.init();
   }
