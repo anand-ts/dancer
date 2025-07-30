@@ -3,7 +3,7 @@ export const AUDIO_CONFIG = {
   FFT_SIZE: 512,
   SMOOTHING: 0.8,
   FREQUENCY_CUTOFF: 0.65, // Use 65% of frequency data - focus on most active musical range
-  HEIGHT_MARGIN: 0.95,   // Use 95% of height - allow bars to reach near the top
+  HEIGHT_MARGIN: 1.00, 
   MIN_THRESHOLD: 0.02
 };
 
