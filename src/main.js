@@ -211,17 +211,20 @@ class VisualizationRenderer {
     this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
     
     const usefulBins = Math.floor(frequencyData.length * AUDIO_CONFIG.FREQUENCY_CUTOFF);
-    const barWidth = this.canvas.width / usefulBins;
+    // Use fewer bars focused on the most active musical frequencies
+    const numBars = Math.min(76, usefulBins); // Cap at 76 bars to eliminate all dead zones
+    const barWidth = this.canvas.width / numBars;
     const maxHeight = this.canvas.height * AUDIO_CONFIG.HEIGHT_MARGIN;
     
-    for (let i = 0; i < usefulBins; i++) {
-      this.renderSingleBar(i, usefulBins, frequencyData, barWidth, maxHeight);
+    for (let i = 0; i < numBars; i++) {
+      this.renderSingleBar(i, numBars, frequencyData, barWidth, maxHeight);
     }
   }
 
-  renderSingleBar(index, totalBins, frequencyData, barWidth, maxHeight) {
-    // Apply logarithmic scaling for better visual distribution
-    const scaledIndex = Math.floor(Math.pow(index / totalBins, 0.5) * frequencyData.length);
+  renderSingleBar(index, totalBars, frequencyData, barWidth, maxHeight) {
+    // Map the visual bar index to the frequency data across the useful frequency range
+    const usefulBins = Math.floor(frequencyData.length * AUDIO_CONFIG.FREQUENCY_CUTOFF);
+    const scaledIndex = Math.floor((index / totalBars) * usefulBins);
     const value = frequencyData[scaledIndex];
     
     // Calculate bar properties
@@ -229,7 +232,7 @@ class VisualizationRenderer {
     const barHeight = normalizedValue * maxHeight;
     
     // Generate color based on frequency and amplitude
-    const hue = (index / totalBins) * VISUAL_CONFIG.HUE_RANGE;
+    const hue = (index / totalBars) * VISUAL_CONFIG.HUE_RANGE;
     const saturation = VISUAL_CONFIG.BASE_SATURATION + (normalizedValue * VISUAL_CONFIG.SATURATION_RANGE);
     const lightness = VISUAL_CONFIG.BASE_LIGHTNESS + (normalizedValue * VISUAL_CONFIG.LIGHTNESS_RANGE);
     
