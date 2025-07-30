@@ -23,6 +23,10 @@ class CustomAudioPlayer {
     this.volumeBar = document.getElementById('volume-bar');
     this.volumeFill = document.getElementById('volume-fill');
     this.volumeHandle = document.getElementById('volume-handle');
+    this.volumeMax = document.querySelector('.volume-max');
+    
+    // Volume display timer
+    this.volumeDisplayTimer = null;
     
     this.setupEventListeners();
     this.updateVolumeDisplay();
@@ -98,10 +102,12 @@ class CustomAudioPlayer {
     if (this.isMuted) {
       this.audio.volume = this.lastVolume;
       this.isMuted = false;
+      this.showVolumePercentage(Math.round(this.lastVolume * 100));
     } else {
       this.lastVolume = this.audio.volume;
       this.audio.volume = 0;
       this.isMuted = true;
+      this.showVolumePercentage(0);
     }
     this.updateVolumeDisplay();
   }
@@ -132,6 +138,7 @@ class CustomAudioPlayer {
       this.lastVolume = volume;
     }
     this.updateVolumeDisplay();
+    this.showVolumePercentage(Math.round(percentage));
   }
   
   updateVolumeDisplay() {
@@ -151,6 +158,22 @@ class CustomAudioPlayer {
       this.volumeButton.style.background = '#000';
       this.volumeButton.style.color = '#fff';
     }
+  }
+  
+  showVolumePercentage(percentage) {
+    // Clear any existing timer
+    if (this.volumeDisplayTimer) {
+      clearTimeout(this.volumeDisplayTimer);
+    }
+    
+    // Show percentage
+    this.volumeMax.textContent = percentage + '%';
+    
+    // Reset to MAX after 1.5 seconds
+    this.volumeDisplayTimer = setTimeout(() => {
+      this.volumeMax.textContent = 'MAX';
+      this.volumeDisplayTimer = null;
+    }, 1500);
   }
   
   formatTime(seconds) {
