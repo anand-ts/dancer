@@ -537,9 +537,31 @@ class VisualizationRenderer {
   }
 
   renderSingleBar(index, totalBars, frequencyData, barWidth, maxHeight) {
-    // Map the visual bar index to the frequency data across the useful frequency range
+    // Map the visual bar index to the frequency data with proper frequency distribution
     const usefulBins = Math.floor(frequencyData.length * AUDIO_CONFIG.FREQUENCY_CUTOFF);
-    const scaledIndex = Math.floor((index / totalBars) * usefulBins);
+    
+    // Calculate which frequency range this bar represents
+    const normalizedIndex = index / totalBars;
+    let scaledIndex;
+    
+    if (normalizedIndex < 0.3) {
+      // First 30% of visual bars = Bass range (use first 10% of frequency bins)
+      const bassProgress = normalizedIndex / 0.3;
+      scaledIndex = Math.floor(bassProgress * usefulBins * AUDIO_CONFIG.BASS_CUTOFF);
+    } else if (normalizedIndex < 0.7) {
+      // Next 40% of visual bars = Mid range (use next 30% of frequency bins)
+      const midProgress = (normalizedIndex - 0.3) / 0.4;
+      const bassEnd = usefulBins * AUDIO_CONFIG.BASS_CUTOFF;
+      const midRange = usefulBins * (AUDIO_CONFIG.MID_CUTOFF - AUDIO_CONFIG.BASS_CUTOFF);
+      scaledIndex = Math.floor(bassEnd + (midProgress * midRange));
+    } else {
+      // Last 30% of visual bars = Treble range (use remaining frequency bins)
+      const trebleProgress = (normalizedIndex - 0.7) / 0.3;
+      const midEnd = usefulBins * AUDIO_CONFIG.MID_CUTOFF;
+      const trebleRange = usefulBins * (AUDIO_CONFIG.TREBLE_CUTOFF - AUDIO_CONFIG.MID_CUTOFF);
+      scaledIndex = Math.floor(midEnd + (trebleProgress * trebleRange));
+    }
+    
     const value = frequencyData[scaledIndex];
     
     // Calculate bar properties
