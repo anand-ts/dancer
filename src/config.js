@@ -1,10 +1,10 @@
 // Application configuration
 export const AUDIO_CONFIG = {
   FFT_SIZE: 2048, // Increased for better frequency resolution (1024 bins)
-  SMOOTHING: 0.8,
+  SMOOTHING: 0.90,
   FREQUENCY_CUTOFF: 0.65, // Use 65% of frequency data - focus on most active musical range
   HEIGHT_MARGIN: 1.00, 
-  MIN_THRESHOLD: 0.02,
+  MIN_THRESHOLD: 0.01,
   // Frequency range mapping for better bass/mid/treble distribution
   // These values match the visual bar distribution (30% bass, 40% mid, 30% treble)
   BASS_CUTOFF: 0.15,    // First 15% of frequency bins for bass (roughly 20-650 Hz)
