@@ -12,16 +12,42 @@
     <div id="container">
       <canvas id="waveform-canvas"></canvas>
       <div id="controls">
+      <div id="drag-handle" class="drag-handle">
+        <span class="drag-dots">⋮⋮</span>
+        <span class="drag-title">DANCER</span>
+        <span class="drag-dots">⋮⋮</span>
+      </div>
+      <div class="controls-content">
         <div id="audio-controls">
-          <div id="track-info">Cult Member - Faygo</div>
-          <audio id="audio-player" controls preload="auto">
-            <source src="./assets/Cult Member - Faygo.m4a" type="audio/mp4">
-            Your browser does not support the audio element.
-          </audio>
-          <button id="play-button">▶ PLAY</button>
+        <div id="track-info">Cult Member - Faygo</div>
+        <audio id="audio-player" preload="auto">
+          <source src="./assets/Cult Member - Faygo.m4a" type="audio/mp4">
+          Your browser does not support the audio element.
+        </audio>
+        <div class="custom-audio-player">
+          <div class="audio-progress" id="audio-progress">
+            <div class="time-display" id="current-time">0:00</div>
+            <div class="progress-bar" id="progress-bar">
+              <div class="progress-fill" id="progress-fill"></div>
+              <div class="progress-handle" id="progress-handle"></div>
+            </div>
+            <div class="time-display" id="duration-time">0:00</div>
+          </div>
+          <div class="volume-control">
+            <div class="volume-indicators">
+              <button id="volume-button" class="volume-btn">MUTE</button>
+              <div class="volume-slider" id="volume-slider">
+                <div class="volume-bar" id="volume-bar">
+                  <div class="volume-fill" id="volume-fill"></div>
+                  <div class="volume-handle" id="volume-handle"></div>
+                </div>
+              </div>
+              <div class="volume-max">MAX</div>
+            </div>
+          </div>
         </div>
-        
-        <div id="status"></div>
+        <button id="play-button">▶ PLAY</button>
+      </div>        <div id="status"></div>
         <div id="audio-level">
           <div>Audio Level:</div>
           <div id="level-bar">
@@ -29,6 +55,7 @@
           </div>
           <div id="level-text">0</div>
         </div>
+              </div>
       </div>
     </div>
   </body>
