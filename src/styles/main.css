@@ -1,0 +1,12 @@
+/* Base styles */
+@import './base/variables.css';
+@import './base/reset.css';
+
+/* Layout */
+@import './layout/canvas.css';
+
+/* Components */
+@import './components/time-widget.css';
+@import './components/controls.css';
+@import './components/audio-player.css';
+@import './components/audio-level.css';

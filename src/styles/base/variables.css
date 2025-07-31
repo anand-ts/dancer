@@ -1,0 +1,53 @@
+:root {
+  /* Typography */
+  font-family: Inter, Avenir, Helvetica, Arial, sans-serif;
+  font-size: 16px;
+  line-height: 24px;
+  font-weight: 400;
+  color: #0f0f0f;
+  background-color: #ffffff;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  -webkit-text-size-adjust: 100%;
+
+  /* Theme colors */
+  --bg-black: #000;
+  --text-white: #333;
+  --text-primary: #333;
+  
+  /* Control panel colors - minimal white theme */
+  --control-bg: rgba(255, 255, 255, 0.95);
+  --control-bg-hover: rgba(255, 255, 255, 0.98);
+  --control-border: rgba(0, 0, 0, 0.1);
+  --control-border-hover: rgba(0, 0, 0, 0.2);
+  --control-accent: rgba(0, 0, 0, 0.05);
+  --control-accent-strong: rgba(0, 0, 0, 0.1);
+  
+  /* Spacing */
+  --spacing-xs: 6px;
+  --spacing-sm: 8px;
+  --spacing-md: 12px;
+  --spacing-lg: 18px;
+  --spacing-xl: 20px;
+  --spacing-2xl: 25px;
+  
+  /* Border radius */
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  
+  /* Borders */
+  --border-width: 2px;
+  
+  /* Level bar colors - minimal theme */
+  --level-bg: rgba(0, 0, 0, 0.08);
+  --level-border: rgba(0, 0, 0, 0.15);
+  --level-gradient: linear-gradient(90deg, #333, #555, #777, #999, #bbb);
+  --level-shadow: 0 0 5px rgba(0, 0, 0, 0.1);
+  
+  /* Status colors - minimal theme */
+  --status-success-bg: rgba(0, 0, 0, 0.05);
+  --status-success-border: rgba(0, 0, 0, 0.1);
+}

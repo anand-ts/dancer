@@ -1,0 +1,71 @@
+#time-widget {
+  position: fixed;
+  top: var(--spacing-2xl);
+  right: var(--spacing-2xl);
+  background: transparent;
+  border: none;
+  padding: 0;
+  user-select: none;
+  z-index: 100;
+  cursor: pointer;
+}
+
+.time-display-widget {
+  padding: var(--spacing-sm);
+  text-align: right;
+  transform-origin: top right;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.current-time {
+  font-family: 'Monaco', 'Courier New', monospace;
+  font-weight: 300;
+  font-size: 24px;
+  color: rgba(255, 255, 255, 0.9);
+  text-transform: none;
+  letter-spacing: 0.5px;
+  line-height: 1;
+  margin-bottom: 2px;
+  text-shadow: 0 0 20px rgba(255, 255, 255, 0.3);
+  transition: all 0.3s ease;
+}
+
+.current-date {
+  font-family: 'Monaco', 'Courier New', monospace;
+  font-weight: 400;
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.6);
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  line-height: 1;
+  transition: all 0.3s ease;
+}
+
+/* Hover effects with twist */
+#time-widget:hover .time-display-widget {
+  transform: scale(1.1) rotate(-2deg);
+}
+
+#time-widget:hover .current-time {
+  color: rgba(255, 255, 255, 1);
+  text-shadow: 
+    0 0 30px rgba(255, 255, 255, 0.5),
+    0 0 60px rgba(255, 255, 255, 0.2);
+  letter-spacing: 1px;
+}
+
+#time-widget:hover .current-date {
+  color: rgba(255, 255, 255, 0.8);
+  letter-spacing: 3px;
+}
+
+/* Pulsing effect for seconds */
+.current-time.pulse {
+  animation: timePulse 0.1s ease-out;
+}
+
+@keyframes timePulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.02); }
+  100% { transform: scale(1); }
+}
