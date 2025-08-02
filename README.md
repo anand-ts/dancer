@@ -1,12 +1,12 @@
 
 
-# Dancer - Music Visualizer
+# dancer
 
 ![dancer](/public/dancer_new.gif)
 
 ## Project Summary
 
-Dancer is a music visualizer that transforms audio into real-time visual experiences. Built with Tauri and web technologies, it provides waveform visualizations with interactive controls.
+dancer is a music visualizer that transforms audio into real-time visual experiences. Built with Tauri and web technologies, it provides waveform visualizations with interactive controls.
 
 ## Key Features
 
@@ -16,19 +16,17 @@ Dancer is a music visualizer that transforms audio into real-time visual experie
 - **Interactive Controls** - Audio player with seekable timeline
 - **Draggable Interface** - Moveable control panels
 - **Native Performance** - Tauri desktop application
-- **Responsive UI** - Responsive design with animations
 
 ## Tech Stack
 
 ### **Backend**
-- **Tauri (Rust)** - Desktop application framework
-- **ScreenCaptureKit** - macOS screen capture
-- **Web Audio API** - Audio processing
+- **Tauri (Rust)**
+- **Web Audio API**
 
 ### **Frontend**
-- **HTML / CSS / JavaScript** - Web technologies
-- **Vite** - Build tool and development server
-- **Canvas API** - Rendering
+- **HTML / CSS / JavaScript**
+- **Vite**
+- **Canvas API**
 
 ## Usage
 
@@ -61,9 +59,9 @@ Dancer is a music visualizer that transforms audio into real-time visual experie
    npm run tauri build
    ```
 
-### **How to Use**
+### **Inspiration**
 
-1. **Load Audio** - Drag and drop an audio file or use the file picker
-2. **Control Playback** - Use the audio controls to play, pause, and seek
-3. **Customize View** - Drag the control panel to preferred position
-4. **Enjoy** - Watch the waveform visualization sync with your music
+- Windows Media Player (XP & later) 
+- iTunes Visualizer**  
+  Apple's "wormhole" and particle effects-later powered by the Magnetosphere plugin-offered smooth, psychedelic animations.
+- PSP / PS3 Music Visualizer
