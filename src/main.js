@@ -18,6 +18,8 @@ class WaveformVisualizer {
     this.statusManager = new StatusManager(this.domCache);
     this.audioManager = new AudioManager(this.domCache, this.statusManager);
     this.renderer = new VisualizationRenderer(this.domCache, this.statusManager);
+    this.controlsElement = this.domCache.get('controls');
+    this.minimizeButton = this.domCache.get('minimizeButton');
     
     // Initialize custom audio player
     this.customPlayer = new CustomAudioPlayer(this.domCache.get('audioPlayer'), this.domCache);
@@ -29,9 +31,10 @@ class WaveformVisualizer {
     // Initialize drag and drop for audio files
     this.audioDropHandler = new AudioDropHandler(
       this.domCache.get('controls'), 
-      this.audioManager, 
-      this.statusManager
+      this.audioManager
     );
+
+    this.setupMinimizeControls();
     
     this.init();
   }
@@ -66,6 +69,30 @@ class WaveformVisualizer {
   handlePause() {
     console.log('Pause event triggered');
     this.renderer.stopVisualization();
+  }
+
+  setupMinimizeControls() {
+    const controls = this.controlsElement;
+    const minimizeButton = this.minimizeButton;
+
+    if (!controls || !minimizeButton) return;
+
+    const updateButtonState = (isMinimized) => {
+      minimizeButton.textContent = isMinimized ? 'FULL' : 'MIN';
+      minimizeButton.setAttribute('aria-expanded', String(!isMinimized));
+      minimizeButton.setAttribute('title', isMinimized ? 'Restore full player' : 'Minimize player');
+    };
+
+    updateButtonState(false);
+
+    minimizeButton.addEventListener('mousedown', (event) => {
+      event.stopPropagation();
+    });
+
+    minimizeButton.addEventListener('click', () => {
+      const isNowMinimized = controls.classList.toggle('is-minimized');
+      updateButtonState(isNowMinimized);
+    });
   }
 }
 

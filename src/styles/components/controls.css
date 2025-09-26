@@ -40,6 +40,40 @@
   text-align: center;
 }
 
+.drag-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.drag-action-button {
+  background: #fff;
+  color: #000;
+  border: 2px solid #fff;
+  border-radius: 0;
+  padding: 4px 10px;
+  font-family: 'Monaco', 'Courier New', monospace;
+  font-weight: 900;
+  font-size: 12px;
+  letter-spacing: 1px;
+  cursor: pointer;
+  transition: all 0.1s ease;
+  box-shadow: 2px 2px 0px rgba(0, 0, 0, 0.4);
+  text-transform: uppercase;
+}
+
+.drag-action-button:hover {
+  background: #ccc;
+  color: #000;
+  transform: translate(-1px, -1px);
+  box-shadow: 3px 3px 0px rgba(0, 0, 0, 0.4);
+}
+
+.drag-action-button:active {
+  transform: translate(0px, 0px);
+  box-shadow: 1px 1px 0px rgba(0, 0, 0, 0.4);
+}
+
 .drag-dots {
   font-size: 16px;
   line-height: 1;
@@ -48,6 +82,59 @@
 
 .controls-content {
   padding: var(--spacing-xl);
+}
+
+.mini-player {
+  display: none;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-md);
+  background: #fff;
+  border-bottom: 2px solid #000;
+  padding: var(--spacing-md) var(--spacing-xl);
+  font-family: 'Monaco', 'Courier New', monospace;
+}
+
+.mini-track {
+  flex: 1;
+  font-size: 12px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: #000;
+}
+
+.mini-controls {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.mini-player-button {
+  background: #000;
+  color: #fff;
+  border: 2px solid #000;
+  border-radius: 0;
+  padding: var(--spacing-sm) var(--spacing-md);
+  font-family: 'Monaco', 'Courier New', monospace;
+  font-weight: 900;
+  font-size: 11px;
+  letter-spacing: 1px;
+  cursor: pointer;
+  transition: all 0.1s ease;
+  box-shadow: 2px 2px 0px #333;
+  text-transform: uppercase;
+}
+
+.mini-player-button:hover {
+  background: #333;
+  transform: translate(-1px, -1px);
+  box-shadow: 3px 3px 0px #000;
+}
+
+.mini-player-button:active {
+  transform: translate(0px, 0px);
+  box-shadow: 1px 1px 0px #333;
 }
 
 #controls.dragging {
@@ -105,6 +192,24 @@
   box-shadow: 
     12px 12px 0px #000,
     0 0 0 4px rgba(255, 255, 255, 0.9);
+}
+
+#controls.is-minimized {
+  min-width: 320px;
+  max-width: 360px;
+  padding: 0;
+}
+
+#controls.is-minimized .controls-content {
+  display: none;
+}
+
+#controls.is-minimized .mini-player {
+  display: flex;
+}
+
+#controls.is-minimized:hover {
+  transform: translate(-2px, -2px);
 }
 
 /* Clean minimal styles */

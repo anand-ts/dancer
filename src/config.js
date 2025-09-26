@@ -35,5 +35,11 @@ export const DOM_ELEMENTS = {
   PLAY_BUTTON: 'play-button',
   STATUS: 'status',
   LEVEL_FILL: 'level-fill',
-  LEVEL_TEXT: 'level-text'
+  LEVEL_TEXT: 'level-text',
+  TRACK_INFO: 'track-info',
+  MINIMIZE_BUTTON: 'minimize-button',
+  MINI_PLAYER: 'mini-player',
+  MINI_TRACK_INFO: 'mini-track-title',
+  MINI_PLAY_BUTTON: 'mini-play-button',
+  MINI_NEXT_BUTTON: 'mini-next-button'
 };
