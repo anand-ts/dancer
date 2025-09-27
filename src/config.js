@@ -21,6 +21,23 @@ export const VISUAL_CONFIG = {
   BAR_GAP: 2
 };
 
+export const VISUALIZER_TYPES = {
+  FREQUENCY_BARS: 'frequency-bars',
+  CIRCULAR_SPECTRUM: 'circular-spectrum', 
+  WAVEFORM: 'waveform',
+  PARTICLE_FIELD: 'particle-field',
+  RADIAL_BARS: 'radial-bars',
+  MATRIX_RAIN: 'matrix-rain'
+};
+
+export const VISUALIZER_CONFIG = {
+  DEFAULT_TYPE: VISUALIZER_TYPES.FREQUENCY_BARS,
+  PARTICLE_COUNT: 150,
+  MATRIX_COLUMN_WIDTH: 20,
+  WAVEFORM_TRAIL_LENGTH: 5,
+  ANIMATION_SPEED: 0.016
+};
+
 export const STATUS_MESSAGES = {
   LOADING: 'Loading audio...',
   READY: 'Ready to play - Click play button',

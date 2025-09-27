@@ -10,6 +10,7 @@ import VisualizationRenderer from './visualization/VisualizationRenderer.js';
 import CustomAudioPlayer from './ui/CustomAudioPlayer.js';
 import DragHandler from './ui/DragHandler.js';
 import TimeWidget from './ui/TimeWidget.js';
+import VisualizerSidebar from './ui/VisualizerSidebar.js';
 
 // Main application class
 class WaveformVisualizer {
@@ -34,7 +35,11 @@ class WaveformVisualizer {
       this.audioManager
     );
 
+    // Initialize visualizer sidebar
+    this.visualizerSidebar = new VisualizerSidebar(this.renderer);
+
     this.setupMinimizeControls();
+    this.setupWindowResize();
     
     this.init();
   }
@@ -92,6 +97,14 @@ class WaveformVisualizer {
     minimizeButton.addEventListener('click', () => {
       const isNowMinimized = controls.classList.toggle('is-minimized');
       updateButtonState(isNowMinimized);
+    });
+  }
+
+  setupWindowResize() {
+    window.addEventListener('resize', () => {
+      if (this.visualizerSidebar) {
+        this.visualizerSidebar.handleResize();
+      }
     });
   }
 }

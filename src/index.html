@@ -17,6 +17,96 @@
           <div class="current-date" id="current-date-widget">TUE, JUL 29</div>
         </div>
       </div>
+      <button id="visualizer-toggle" class="visualizer-toggle-button">
+        <span class="visualizer-icon">◆</span>
+        <span class="visualizer-text">VIZ</span>
+      </button>
+      <div id="visualizer-sidebar" class="visualizer-sidebar">
+        <div class="sidebar-backdrop"></div>
+        <div class="sidebar-content">
+          <div class="sidebar-header">
+            <h3 class="sidebar-title">VISUALIZERS</h3>
+            <button id="sidebar-close" class="sidebar-close" aria-label="Close visualizers menu">×</button>
+          </div>
+          <div class="visualizer-grid">
+            <div class="visualizer-option active" data-visualizer="frequency-bars">
+              <div class="visualizer-preview">
+                <div class="bars-preview">
+                  <span></span><span></span><span></span><span></span><span></span>
+                </div>
+              </div>
+              <div class="visualizer-info">
+                <h4 class="visualizer-name">FREQUENCY BARS</h4>
+                <p class="visualizer-desc">Classic spectrum analyzer</p>
+              </div>
+            </div>
+            <div class="visualizer-option" data-visualizer="circular-spectrum">
+              <div class="visualizer-preview">
+                <div class="circle-preview">
+                  <div class="circle-center"></div>
+                </div>
+              </div>
+              <div class="visualizer-info">
+                <h4 class="visualizer-name">CIRCULAR SPECTRUM</h4>
+                <p class="visualizer-desc">Radial frequency display</p>
+              </div>
+            </div>
+            <div class="visualizer-option" data-visualizer="waveform">
+              <div class="visualizer-preview">
+                <div class="wave-preview">
+                  <svg viewBox="0 0 40 20">
+                    <path d="M0 10 Q10 5 20 10 T40 10" stroke="currentColor" fill="none" stroke-width="2"/>
+                  </svg>
+                </div>
+              </div>
+              <div class="visualizer-info">
+                <h4 class="visualizer-name">WAVEFORM</h4>
+                <p class="visualizer-desc">Oscilloscope-style waves</p>
+              </div>
+            </div>
+            <div class="visualizer-option" data-visualizer="particle-field">
+              <div class="visualizer-preview">
+                <div class="particles-preview">
+                  <span></span><span></span><span></span><span></span>
+                  <span></span><span></span><span></span><span></span>
+                </div>
+              </div>
+              <div class="visualizer-info">
+                <h4 class="visualizer-name">PARTICLE FIELD</h4>
+                <p class="visualizer-desc">Dynamic particle system</p>
+              </div>
+            </div>
+            <div class="visualizer-option" data-visualizer="radial-bars">
+              <div class="visualizer-preview">
+                <div class="radial-preview">
+                  <div class="radial-center"></div>
+                  <div class="radial-bars">
+                    <span></span><span></span><span></span><span></span>
+                    <span></span><span></span><span></span><span></span>
+                  </div>
+                </div>
+              </div>
+              <div class="visualizer-info">
+                <h4 class="visualizer-name">RADIAL BARS</h4>
+                <p class="visualizer-desc">360° spectrum visualization</p>
+              </div>
+            </div>
+            <div class="visualizer-option" data-visualizer="matrix-rain">
+              <div class="visualizer-preview">
+                <div class="matrix-preview">
+                  <div class="matrix-columns">
+                    <span></span><span></span><span></span><span></span><span></span>
+                  </div>
+                </div>
+              </div>
+              <div class="visualizer-info">
+                <h4 class="visualizer-name">MATRIX RAIN</h4>
+                <p class="visualizer-desc">Falling digital columns</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
       <div id="controls">
         <div id="drag-handle" class="drag-handle">
           <span class="drag-dots">⋮⋮</span>

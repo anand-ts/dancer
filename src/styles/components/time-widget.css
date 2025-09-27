@@ -69,3 +69,80 @@
   50% { transform: scale(1.02); }
   100% { transform: scale(1); }
 }
+
+/* Visualizer Toggle Button */
+#visualizer-toggle {
+  position: fixed;
+  top: calc(var(--spacing-2xl) + 80px); /* Position below time widget */
+  right: var(--spacing-2xl);
+  background: rgba(255, 255, 255, 0.1);
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-radius: 0;
+  padding: var(--spacing-sm) var(--spacing-md);
+  user-select: none;
+  z-index: 100;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+  transform-origin: top right;
+}
+
+.visualizer-icon {
+  font-size: 16px;
+  color: rgba(255, 255, 255, 0.7);
+  transition: all 0.3s ease;
+  transform: rotate(45deg);
+}
+
+.visualizer-text {
+  font-family: 'Monaco', 'Courier New', monospace;
+  font-weight: 700;
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.7);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  transition: all 0.3s ease;
+}
+
+#visualizer-toggle:hover {
+  background: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.6);
+  transform: scale(1.05) rotate(-2deg);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+}
+
+#visualizer-toggle:hover .visualizer-icon {
+  color: rgba(255, 255, 255, 1);
+  transform: rotate(45deg) scale(1.1);
+}
+
+#visualizer-toggle:hover .visualizer-text {
+  color: rgba(255, 255, 255, 1);
+  letter-spacing: 2px;
+}
+
+#visualizer-toggle:active {
+  transform: scale(0.98) rotate(-1deg);
+  transition: transform 0.1s ease;
+}
+
+/* Active state when sidebar is open */
+#visualizer-toggle.active {
+  background: rgba(255, 255, 255, 0.9);
+  border-color: rgba(255, 255, 255, 1);
+  box-shadow: 0 0 25px rgba(255, 255, 255, 0.3);
+}
+
+#visualizer-toggle.active .visualizer-icon {
+  color: rgba(0, 0, 0, 0.8);
+  transform: rotate(225deg) scale(1.1);
+}
+
+#visualizer-toggle.active .visualizer-text {
+  color: rgba(0, 0, 0, 0.8);
+}

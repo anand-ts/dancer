@@ -6,15 +6,57 @@ export default class VisualizationRenderer {
     this.ctx = this.canvas.getContext('2d');
     this.statusManager = statusManager;
     this.animationId = null;
+    this.currentVisualizer = 'frequency-bars';
+    this.particles = []; // For particle field visualizer
+    this.waveHistory = []; // For waveform visualizer
+    this.matrixColumns = []; // For matrix rain visualizer
+    this.time = 0; // Animation time tracker
     
     // Make canvas responsive
     this.resizeCanvas();
     window.addEventListener('resize', () => this.resizeCanvas());
+    
+    this.initializeVisualizerData();
   }
 
   resizeCanvas() {
     this.canvas.width = window.innerWidth;
     this.canvas.height = window.innerHeight;
+    this.initializeVisualizerData();
+  }
+
+  initializeVisualizerData() {
+    // Initialize particles for particle field
+    this.particles = [];
+    for (let i = 0; i < 150; i++) {
+      this.particles.push({
+        x: Math.random() * this.canvas.width,
+        y: Math.random() * this.canvas.height,
+        vx: (Math.random() - 0.5) * 2,
+        vy: (Math.random() - 0.5) * 2,
+        radius: Math.random() * 3 + 1,
+        originalRadius: Math.random() * 3 + 1,
+        hue: Math.random() * 360
+      });
+    }
+    
+    // Initialize matrix columns
+    this.matrixColumns = [];
+    const columnCount = Math.floor(this.canvas.width / 20);
+    for (let i = 0; i < columnCount; i++) {
+      this.matrixColumns.push({
+        x: i * 20,
+        y: Math.random() * this.canvas.height,
+        speed: Math.random() * 3 + 2,
+        chars: '01'.split(''),
+        trail: []
+      });
+    }
+  }
+
+  setVisualizer(type) {
+    this.currentVisualizer = type;
+    this.initializeVisualizerData();
   }
 
   startVisualization(audioManager) {
@@ -24,9 +66,32 @@ export default class VisualizationRenderer {
       const frequencyData = audioManager.getFrequencyData();
       if (!frequencyData) return;
       
-      this.renderFrequencyBars(frequencyData);
-      this.statusManager.updateAudioLevel(audioManager.calculateAudioLevel());
+      this.time += 0.016; // Roughly 60fps timing
       
+      switch (this.currentVisualizer) {
+        case 'frequency-bars':
+          this.renderFrequencyBars(frequencyData);
+          break;
+        case 'circular-spectrum':
+          this.renderCircularSpectrum(frequencyData);
+          break;
+        case 'waveform':
+          this.renderWaveform(frequencyData);
+          break;
+        case 'particle-field':
+          this.renderParticleField(frequencyData);
+          break;
+        case 'radial-bars':
+          this.renderRadialBars(frequencyData);
+          break;
+        case 'matrix-rain':
+          this.renderMatrixRain(frequencyData);
+          break;
+        default:
+          this.renderFrequencyBars(frequencyData);
+      }
+      
+      this.statusManager.updateAudioLevel(audioManager.calculateAudioLevel());
       this.animationId = requestAnimationFrame(draw);
     };
     
@@ -95,6 +160,203 @@ export default class VisualizationRenderer {
       barWidth - VISUAL_CONFIG.BAR_GAP,
       barHeight
     );
+  }
+
+  renderCircularSpectrum(frequencyData) {
+    this.ctx.fillStyle = '#000';
+    this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+    
+    const centerX = this.canvas.width / 2;
+    const centerY = this.canvas.height / 2;
+    const baseRadius = Math.min(this.canvas.width, this.canvas.height) * 0.15;
+    const maxRadius = Math.min(this.canvas.width, this.canvas.height) * 0.4;
+    
+    const usefulBins = Math.floor(frequencyData.length * AUDIO_CONFIG.FREQUENCY_CUTOFF);
+    const numBars = Math.min(120, usefulBins);
+    
+    for (let i = 0; i < numBars; i++) {
+      const angle = (i / numBars) * Math.PI * 2;
+      const value = frequencyData[Math.floor((i / numBars) * usefulBins)];
+      const normalizedValue = Math.max(value / 255, AUDIO_CONFIG.MIN_THRESHOLD);
+      const barLength = normalizedValue * (maxRadius - baseRadius);
+      
+      const hue = (i / numBars) * VISUAL_CONFIG.HUE_RANGE;
+      const saturation = VISUAL_CONFIG.BASE_SATURATION + (normalizedValue * VISUAL_CONFIG.SATURATION_RANGE);
+      const lightness = VISUAL_CONFIG.BASE_LIGHTNESS + (normalizedValue * VISUAL_CONFIG.LIGHTNESS_RANGE);
+      
+      this.ctx.strokeStyle = `hsl(${hue}, ${saturation}%, ${lightness}%)`;
+      this.ctx.lineWidth = 3;
+      
+      const startX = centerX + Math.cos(angle) * baseRadius;
+      const startY = centerY + Math.sin(angle) * baseRadius;
+      const endX = centerX + Math.cos(angle) * (baseRadius + barLength);
+      const endY = centerY + Math.sin(angle) * (baseRadius + barLength);
+      
+      this.ctx.beginPath();
+      this.ctx.moveTo(startX, startY);
+      this.ctx.lineTo(endX, endY);
+      this.ctx.stroke();
+    }
+  }
+
+  renderWaveform(frequencyData) {
+    this.ctx.fillStyle = '#000';
+    this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+    
+    // Store wave data for trail effect
+    const waveData = [];
+    const centerY = this.canvas.height / 2;
+    const amplitude = this.canvas.height * 0.3;
+    
+    for (let i = 0; i < this.canvas.width; i++) {
+      const freqIndex = Math.floor((i / this.canvas.width) * frequencyData.length * AUDIO_CONFIG.FREQUENCY_CUTOFF);
+      const value = frequencyData[freqIndex] || 0;
+      const normalizedValue = (value / 255) - 0.5;
+      waveData.push(centerY + normalizedValue * amplitude);
+    }
+    
+    this.waveHistory.unshift(waveData);
+    if (this.waveHistory.length > 5) {
+      this.waveHistory.pop();
+    }
+    
+    // Draw multiple waveforms for trail effect
+    this.waveHistory.forEach((wave, index) => {
+      const alpha = 1 - (index * 0.15);
+      const hue = (this.time * 50) % 360;
+      
+      this.ctx.strokeStyle = `hsla(${hue}, 70%, 60%, ${alpha})`;
+      this.ctx.lineWidth = 3 - index;
+      this.ctx.beginPath();
+      this.ctx.moveTo(0, wave[0]);
+      
+      for (let i = 1; i < wave.length; i++) {
+        this.ctx.lineTo(i, wave[i]);
+      }
+      this.ctx.stroke();
+    });
+  }
+
+  renderParticleField(frequencyData) {
+    this.ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
+    this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+    
+    const avgFreq = frequencyData.reduce((sum, val) => sum + val, 0) / frequencyData.length;
+    const energy = avgFreq / 255;
+    
+    this.particles.forEach((particle, index) => {
+      // Update particle based on frequency data
+      const freqIndex = Math.floor((index / this.particles.length) * frequencyData.length * AUDIO_CONFIG.FREQUENCY_CUTOFF);
+      const freq = frequencyData[freqIndex] || 0;
+      const normalizedFreq = freq / 255;
+      
+      // Move particles
+      particle.x += particle.vx + (normalizedFreq * 2);
+      particle.y += particle.vy;
+      particle.radius = particle.originalRadius + (normalizedFreq * 5);
+      
+      // Wrap around screen
+      if (particle.x < 0) particle.x = this.canvas.width;
+      if (particle.x > this.canvas.width) particle.x = 0;
+      if (particle.y < 0) particle.y = this.canvas.height;
+      if (particle.y > this.canvas.height) particle.y = 0;
+      
+      // Draw particle
+      const hue = particle.hue + (normalizedFreq * 100);
+      const saturation = 70 + (normalizedFreq * 30);
+      const lightness = 50 + (normalizedFreq * 30);
+      
+      this.ctx.fillStyle = `hsl(${hue}, ${saturation}%, ${lightness}%)`;
+      this.ctx.beginPath();
+      this.ctx.arc(particle.x, particle.y, particle.radius, 0, Math.PI * 2);
+      this.ctx.fill();
+      
+      // Connect nearby particles
+      this.particles.forEach((otherParticle, otherIndex) => {
+        if (otherIndex > index) {
+          const dx = particle.x - otherParticle.x;
+          const dy = particle.y - otherParticle.y;
+          const distance = Math.sqrt(dx * dx + dy * dy);
+          
+          if (distance < 100 && normalizedFreq > 0.3) {
+            this.ctx.strokeStyle = `hsla(${hue}, ${saturation}%, ${lightness}%, ${0.3 * normalizedFreq})`;
+            this.ctx.lineWidth = 1;
+            this.ctx.beginPath();
+            this.ctx.moveTo(particle.x, particle.y);
+            this.ctx.lineTo(otherParticle.x, otherParticle.y);
+            this.ctx.stroke();
+          }
+        }
+      });
+    });
+  }
+
+  renderRadialBars(frequencyData) {
+    this.ctx.fillStyle = '#000';
+    this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+    
+    const centerX = this.canvas.width / 2;
+    const centerY = this.canvas.height / 2;
+    const maxRadius = Math.min(this.canvas.width, this.canvas.height) * 0.45;
+    
+    const usefulBins = Math.floor(frequencyData.length * AUDIO_CONFIG.FREQUENCY_CUTOFF);
+    const numBars = Math.min(180, usefulBins);
+    
+    for (let i = 0; i < numBars; i++) {
+      const angle = (i / numBars) * Math.PI * 2;
+      const value = frequencyData[Math.floor((i / numBars) * usefulBins)];
+      const normalizedValue = Math.max(value / 255, AUDIO_CONFIG.MIN_THRESHOLD);
+      const barLength = normalizedValue * maxRadius;
+      
+      // Create gradient for each bar
+      const gradient = this.ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, barLength);
+      const hue = (i / numBars) * VISUAL_CONFIG.HUE_RANGE + (this.time * 30);
+      gradient.addColorStop(0, `hsla(${hue}, 80%, 60%, 0.8)`);
+      gradient.addColorStop(1, `hsla(${hue}, 80%, 40%, 0.2)`);
+      
+      this.ctx.fillStyle = gradient;
+      this.ctx.save();
+      this.ctx.translate(centerX, centerY);
+      this.ctx.rotate(angle);
+      this.ctx.fillRect(0, 0, barLength, 4);
+      this.ctx.restore();
+    }
+  }
+
+  renderMatrixRain(frequencyData) {
+    this.ctx.fillStyle = 'rgba(0, 0, 0, 0.05)';
+    this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+    
+    const avgFreq = frequencyData.reduce((sum, val) => sum + val, 0) / frequencyData.length;
+    const energy = avgFreq / 255;
+    
+    this.matrixColumns.forEach((column, index) => {
+      // Update column position based on frequency
+      const freqIndex = Math.floor((index / this.matrixColumns.length) * frequencyData.length * AUDIO_CONFIG.FREQUENCY_CUTOFF);
+      const freq = frequencyData[freqIndex] || 0;
+      const normalizedFreq = freq / 255;
+      
+      column.y += column.speed + (normalizedFreq * 5);
+      
+      if (column.y > this.canvas.height + 100) {
+        column.y = -100;
+      }
+      
+      // Draw trail
+      this.ctx.font = '16px monospace';
+      for (let i = 0; i < 15; i++) {
+        const alpha = (1 - (i / 15)) * normalizedFreq;
+        const y = column.y - (i * 20);
+        
+        if (y > -20 && y < this.canvas.height + 20) {
+          const hue = 120 + (normalizedFreq * 60); // Green to yellow-green
+          this.ctx.fillStyle = `hsla(${hue}, 100%, 50%, ${alpha})`;
+          
+          const char = column.chars[Math.floor(Math.random() * column.chars.length)];
+          this.ctx.fillText(char, column.x, y);
+        }
+      }
+    });
   }
 
   stopVisualization() {
