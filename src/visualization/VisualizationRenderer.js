@@ -292,212 +292,143 @@ export default class VisualizationRenderer {
   }
 
   renderRadialBars(frequencyData) {
-    this.ctx.fillStyle = '#000';
+    // Clean black background
+    this.ctx.fillStyle = '#000000';
     this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
-    
+
     const centerX = this.canvas.width / 2;
     const centerY = this.canvas.height / 2;
-    const maxRadius = Math.min(this.canvas.width, this.canvas.height) * 0.45;
-    const innerRadius = maxRadius * 0.15;
+    const maxRadius = Math.min(this.canvas.width, this.canvas.height) * 0.4;
+    const innerRadius = maxRadius * 0.25;
     
     const usefulBins = Math.floor(frequencyData.length * AUDIO_CONFIG.FREQUENCY_CUTOFF);
-    const numBars = Math.min(240, usefulBins); // Even more bars for ultra-smooth effect
+    const numBars = Math.min(180, usefulBins); // Much more bars for density
     
-    // Calculate average energy and frequency analysis
     const avgEnergy = frequencyData.reduce((sum, val) => sum + val, 0) / frequencyData.length / 255;
-    const bassEnergy = frequencyData.slice(0, usefulBins * 0.1).reduce((sum, val) => sum + val, 0) / (usefulBins * 0.1) / 255;
-    const midEnergy = frequencyData.slice(usefulBins * 0.1, usefulBins * 0.5).reduce((sum, val) => sum + val, 0) / (usefulBins * 0.4) / 255;
-    const trebleEnergy = frequencyData.slice(usefulBins * 0.5, usefulBins).reduce((sum, val) => sum + val, 0) / (usefulBins * 0.5) / 255;
-    
-    // Draw background energy field
-    if (avgEnergy > 0.3) {
-      const fieldGradient = this.ctx.createRadialGradient(
-        centerX, centerY, innerRadius,
-        centerX, centerY, maxRadius * 1.2
-      );
-      fieldGradient.addColorStop(0, `hsla(${this.time * 20}, 40%, 20%, 0)`);
-      fieldGradient.addColorStop(0.7, `hsla(${this.time * 20 + 60}, 60%, 30%, ${avgEnergy * 0.15})`);
-      fieldGradient.addColorStop(1, `hsla(${this.time * 20 + 120}, 80%, 40%, ${avgEnergy * 0.05})`);
-      
-      this.ctx.fillStyle = fieldGradient;
-      this.ctx.beginPath();
-      this.ctx.arc(centerX, centerY, maxRadius * 1.2, 0, Math.PI * 2);
-      this.ctx.fill();
+    const bassEnergy = frequencyData.slice(0, Math.floor(usefulBins * 0.2)).reduce((sum, val) => sum + val, 0) / Math.floor(usefulBins * 0.2) / 255;
+
+    // CONSTANT slow rotation - not reactive to music
+    const constantRotationSpeed = 0.015; // Very slow constant speed
+
+    // Add subtle ring guides to show the structure
+    if (avgEnergy > 0.1) {
+      for (let ring = 0; ring < 3; ring++) {
+        const guideRadius = innerRadius + (ring * (maxRadius - innerRadius) / (3 - 0.3) * 1.3);
+        this.ctx.strokeStyle = `rgba(100, 100, 150, ${0.1 + avgEnergy * 0.15})`;
+        this.ctx.lineWidth = 1;
+        this.ctx.beginPath();
+        this.ctx.arc(centerX, centerY, guideRadius, 0, Math.PI * 2);
+        this.ctx.stroke();
+      }
     }
+
+    // Concentric rings with PERFECT SYMMETRY
+    const rings = 3;
+    const ringSpacing = (maxRadius - innerRadius) / (rings - 0.3);
     
-    // Draw multiple layers for depth and vibrancy
-    for (let layer = 0; layer < 4; layer++) { // Added one more layer
-      const layerAlpha = layer === 0 ? 1 : 0.7 - (layer * 0.15);
-      const layerScale = 1 + (layer * 0.25);
-      const layerOffset = layer * 0.08;
-      // Slower rotation speeds
-      const rotationSpeed = (0.15 + layer * 0.08) * (1 + bassEnergy * 0.5);
+    // EXTREMELY DENSE bars for maximum symmetry
+    const barsPerRing = [120, 160, 200]; // Much higher density
+    
+    for (let ring = 0; ring < rings; ring++) {
+      const ringRadius = innerRadius + (ring * ringSpacing * 1.3);
+      const ringRotation = this.time * constantRotationSpeed * (ring % 2 === 0 ? 1 : -1); // Constant slow rotation
+      const barsInRing = barsPerRing[ring];
       
-      for (let i = 0; i < numBars; i++) {
-        const angle = (i / numBars) * Math.PI * 2 + (this.time * rotationSpeed);
-        const value = frequencyData[Math.floor((i / numBars) * usefulBins)];
+      for (let i = 0; i < barsInRing; i++) {
+        // PERFECT ANGULAR SPACING for symmetry
+        const angle = (i / barsInRing) * Math.PI * 2 + ringRotation;
+        
+        // SYMMETRIC SAMPLING: Each bar samples the same relative position in frequency spectrum
+        const baseProgress = i / barsInRing;
+        const sampleIndex = Math.floor(baseProgress * usefulBins);
+        const value = frequencyData[Math.min(sampleIndex, usefulBins - 1)];
         const normalizedValue = Math.max(value / 255, AUDIO_CONFIG.MIN_THRESHOLD);
         
-        // Enhanced bar length with multiple pulsing effects
-        const basePulse = 1 + Math.sin(this.time * 2.5 + i * 0.05) * 0.15 * avgEnergy;
-        const frequencyPulse = 1 + Math.sin(this.time * 4 + i * 0.1) * 0.1 * normalizedValue;
-        const energyBoost = 1 + (bassEnergy * 0.3) + (midEnergy * 0.2) + (trebleEnergy * 0.1);
-        const barLength = (normalizedValue * maxRadius * layerScale * basePulse * frequencyPulse * energyBoost) + innerRadius;
+        // SYMMETRIC scaling for all rings
+        const ringScale = 1.0; // Same scale for perfect symmetry
+        const barStartRadius = ringRadius;
+        const barLength = (normalizedValue * ringScale) * ringSpacing * 1.0;
         
-        // Dynamic bar width with frequency-based modulation
-        const baseWidth = 1.5 + (normalizedValue * 3) + (avgEnergy * 2);
-        const widthPulse = 1 + Math.sin(this.time * 6 + i * 0.2) * 0.3 * normalizedValue;
-        const barWidth = baseWidth * widthPulse;
+        // CONSISTENT bar width for symmetry
+        const barWidth = 3 + (normalizedValue * 4); // Consistent sizing
         
-        // Advanced color system with frequency-specific hues
+        // VIBRANT colors - no boring grays!
         let baseHue;
-        if (i < numBars * 0.3) {
-          baseHue = 240 + (bassEnergy * 60); // Blues/purples for bass
-        } else if (i < numBars * 0.7) {
-          baseHue = 60 + (midEnergy * 120); // Greens/yellows for mids
-        } else {
-          baseHue = 300 + (trebleEnergy * 60); // Reds/magentas for treble
-        }
+        if (ring === 0) baseHue = 280 + (bassEnergy * 80); // Purple-pink for bass
+        else if (ring === 1) baseHue = 180 + (avgEnergy * 60); // Cyan-blue for mids  
+        else baseHue = 30 + (normalizedValue * 120); // Orange-red for treble
         
-        const timeHue = baseHue + (this.time * 15); // Slower color cycling
-        const frequencyHue = timeHue + (normalizedValue * 90) + (layer * 30);
-        const saturation = Math.min(98, 75 + (normalizedValue * 35) + (avgEnergy * 15));
-        const lightness = Math.min(85, 45 + (normalizedValue * 45) + (avgEnergy * 10));
+        const hue = (baseHue + (i / barsInRing) * 40 + this.time * 50) % 360;
+        const saturation = 85 + normalizedValue * 15; // High saturation always
+        const lightness = 55 + normalizedValue * 35 + (avgEnergy * 10); // Fixed: use avgEnergy instead of ringEnergy
         
-        // Create ultra-vibrant gradient for each bar
-        const gradient = this.ctx.createRadialGradient(
-          centerX, centerY, innerRadius - layerOffset,
-          centerX, centerY, barLength
-        );
-        
-        gradient.addColorStop(0, `hsla(${frequencyHue}, ${saturation}%, ${lightness + 25}%, ${layerAlpha})`);
-        gradient.addColorStop(0.3, `hsla(${frequencyHue + 20}, ${saturation}%, ${lightness + 10}%, ${layerAlpha * 0.9})`);
-        gradient.addColorStop(0.7, `hsla(${frequencyHue + 40}, ${saturation - 10}%, ${lightness}%, ${layerAlpha * 0.7})`);
-        gradient.addColorStop(1, `hsla(${frequencyHue + 60}, ${saturation - 25}%, ${lightness - 15}%, ${layerAlpha * 0.3})`);
-        
-        this.ctx.fillStyle = gradient;
         this.ctx.save();
         this.ctx.translate(centerX, centerY);
         this.ctx.rotate(angle);
         
-        // Draw main bar with rounded ends
-        this.ctx.beginPath();
-        this.ctx.roundRect(innerRadius - layerOffset, -barWidth/2, barLength - innerRadius + layerOffset, barWidth, barWidth/3);
-        this.ctx.fill();
+        // Draw powerful bars
+        this.ctx.fillStyle = `hsl(${hue}, ${saturation}%, ${lightness}%)`;
+        this.ctx.fillRect(barStartRadius, -barWidth/2, barLength, barWidth);
         
-        // Enhanced glow effect for high energy bars
-        if (normalizedValue > 0.5 && layer === 0) {
-          this.ctx.shadowBlur = 20 + (normalizedValue * 30);
-          this.ctx.shadowColor = `hsl(${frequencyHue}, ${saturation}%, ${lightness + 20}%)`;
-          this.ctx.fill();
+        // More dramatic glow for reactive power
+        if (normalizedValue > 0.4) {
+          this.ctx.shadowBlur = 8 + (normalizedValue * 15);
+          this.ctx.shadowColor = `hsl(${hue}, 100%, 70%)`;
+          this.ctx.fillRect(barStartRadius, -barWidth/2, barLength, barWidth);
           this.ctx.shadowBlur = 0;
         }
         
         this.ctx.restore();
-        
-        // Enhanced sparkle effects with different types
-        if (layer === 0) {
-          const tipX = centerX + Math.cos(angle) * barLength;
-          const tipY = centerY + Math.sin(angle) * barLength;
-          
-          // Primary sparkles for high energy
-          if (normalizedValue > 0.7 && Math.random() < normalizedValue * 0.4) {
-            this.ctx.fillStyle = `hsla(${frequencyHue + 180}, 100%, 95%, ${normalizedValue * 0.8})`;
-            this.ctx.beginPath();
-            this.ctx.arc(tipX, tipY, 1 + normalizedValue * 3, 0, Math.PI * 2);
-            this.ctx.fill();
-          }
-          
-          // Secondary sparkles for extreme energy
-          if (normalizedValue > 0.85 && Math.random() < 0.3) {
-            const sparkleRadius = 2 + Math.random() * 3;
-            this.ctx.fillStyle = `hsla(${Math.random() * 360}, 100%, 90%, 0.6)`;
-            this.ctx.beginPath();
-            this.ctx.arc(tipX + (Math.random() - 0.5) * 10, tipY + (Math.random() - 0.5) * 10, sparkleRadius, 0, Math.PI * 2);
-            this.ctx.fill();
-          }
-        }
       }
     }
+
+    // DYNAMIC STAR CENTER instead of boring circle
+    const starPoints = 8;
+    const starOuterRadius = (innerRadius * 0.4) + (avgEnergy * 20) + (bassEnergy * 15);
+    const starInnerRadius = starOuterRadius * 0.4;
+    const starRotation = this.time * (0.3 + avgEnergy * 0.5); // Reactive rotation
     
-    // Enhanced center element with frequency-responsive design
-    const baseCenterSize = 12 + (avgEnergy * 25);
-    const centerPulse = 1 + Math.sin(this.time * 3) * 0.25 * avgEnergy;
-    const centerSize = baseCenterSize * centerPulse;
+    this.ctx.save();
+    this.ctx.translate(centerX, centerY);
+    this.ctx.rotate(starRotation);
     
-    // Multi-layer center with different frequencies
-    for (let centerLayer = 0; centerLayer < 3; centerLayer++) {
-      const layerSize = centerSize * (1 - centerLayer * 0.3);
-      const layerAlpha = 0.9 - centerLayer * 0.2;
+    // Create star path
+    this.ctx.beginPath();
+    for (let i = 0; i < starPoints * 2; i++) {
+      const angle = (i * Math.PI) / starPoints;
+      const radius = i % 2 === 0 ? starOuterRadius : starInnerRadius;
+      const x = Math.cos(angle) * radius;
+      const y = Math.sin(angle) * radius;
       
-      const centerGradient = this.ctx.createRadialGradient(
-        centerX, centerY, 0,
-        centerX, centerY, layerSize
-      );
-      
-      const centerHue = (this.time * 80 + centerLayer * 60) % 360;
-      centerGradient.addColorStop(0, `hsla(${centerHue}, 95%, 90%, ${layerAlpha})`);
-      centerGradient.addColorStop(0.5, `hsla(${centerHue + 40}, 85%, 70%, ${layerAlpha * 0.7})`);
-      centerGradient.addColorStop(1, `hsla(${centerHue + 80}, 75%, 50%, ${layerAlpha * 0.3})`);
-      
-      this.ctx.fillStyle = centerGradient;
-      this.ctx.beginPath();
-      this.ctx.arc(centerX, centerY, layerSize, 0, Math.PI * 2);
-      this.ctx.fill();
+      if (i === 0) this.ctx.moveTo(x, y);
+      else this.ctx.lineTo(x, y);
     }
+    this.ctx.closePath();
     
-    // Frequency-specific energy rings
-    if (avgEnergy > 0.4) {
-      // Bass ring (slow, thick)
-      if (bassEnergy > 0.5) {
-        const bassRingRadius = centerSize + 30 + (bassEnergy * 20);
-        this.ctx.strokeStyle = `hsla(240, 80%, 70%, ${bassEnergy * 0.6})`;
-        this.ctx.lineWidth = 4;
-        this.ctx.beginPath();
-        this.ctx.arc(centerX, centerY, bassRingRadius, 0, Math.PI * 2);
-        this.ctx.stroke();
-      }
-      
-      // Mid ring (medium speed, medium thickness)
-      if (midEnergy > 0.6) {
-        const midRingRadius = centerSize + 50 + (midEnergy * 25);
-        this.ctx.strokeStyle = `hsla(120, 85%, 65%, ${midEnergy * 0.5})`;
-        this.ctx.lineWidth = 3;
-        this.ctx.beginPath();
-        this.ctx.arc(centerX, centerY, midRingRadius, 0, Math.PI * 2);
-        this.ctx.stroke();
-      }
-      
-      // Treble ring (fast, thin)
-      if (trebleEnergy > 0.7) {
-        const trebleRingRadius = centerSize + 70 + (trebleEnergy * 30);
-        this.ctx.strokeStyle = `hsla(0, 90%, 75%, ${trebleEnergy * 0.4})`;
-        this.ctx.lineWidth = 2;
-        this.ctx.beginPath();
-        this.ctx.arc(centerX, centerY, trebleRingRadius, 0, Math.PI * 2);
-        this.ctx.stroke();
-      }
-    }
+    // Vibrant star colors that react to music
+    const starHue = (this.time * 120 + avgEnergy * 200) % 360;
+    const starGradient = this.ctx.createRadialGradient(0, 0, 0, 0, 0, starOuterRadius);
+    starGradient.addColorStop(0, `hsl(${starHue}, 95%, 80%)`);
+    starGradient.addColorStop(0.6, `hsl(${(starHue + 60) % 360}, 90%, 65%)`);
+    starGradient.addColorStop(1, `hsl(${(starHue + 120) % 360}, 85%, 45%)`);
     
-    // Ultra-high energy explosion effect
-    if (avgEnergy > 0.8) {
-      const explosionRadius = maxRadius * 0.8;
-      const explosionIntensity = (avgEnergy - 0.8) * 5;
-      
-      for (let burst = 0; burst < 12; burst++) {
-        const burstAngle = (burst / 12) * Math.PI * 2 + (this.time * 0.5);
-        const burstDistance = explosionRadius * (0.8 + Math.random() * 0.4);
-        const burstX = centerX + Math.cos(burstAngle) * burstDistance;
-        const burstY = centerY + Math.sin(burstAngle) * burstDistance;
-        
-        if (Math.random() < explosionIntensity) {
-          this.ctx.fillStyle = `hsla(${Math.random() * 360}, 100%, 80%, ${explosionIntensity * 0.3})`;
-          this.ctx.beginPath();
-          this.ctx.arc(burstX, burstY, 2 + Math.random() * 4, 0, Math.PI * 2);
-          this.ctx.fill();
-        }
-      }
-    }
+    this.ctx.fillStyle = starGradient;
+    this.ctx.fill();
+    
+    // Powerful star glow
+    this.ctx.shadowBlur = 15 + (avgEnergy * 25);
+    this.ctx.shadowColor = `hsl(${starHue}, 100%, 70%)`;
+    this.ctx.fill();
+    this.ctx.shadowBlur = 0;
+    
+    // Inner star core
+    const coreRadius = starInnerRadius * 0.6;
+    this.ctx.fillStyle = `hsl(${(starHue + 180) % 360}, 100%, 90%)`;
+    this.ctx.beginPath();
+    this.ctx.arc(0, 0, coreRadius, 0, Math.PI * 2);
+    this.ctx.fill();
+    
+    this.ctx.restore();
   }
 
   renderMatrixRain(frequencyData) {
