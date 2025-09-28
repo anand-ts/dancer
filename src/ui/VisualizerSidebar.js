@@ -50,13 +50,12 @@ export default class VisualizerSidebar {
       }
       
       // Number keys to select visualizer when sidebar is open
-      if (this.isOpen && e.key >= '1' && e.key <= '6') {
+      if (this.isOpen && e.key >= '1' && e.key <= '5') {
         const visualizers = [
           'frequency-bars',
           'circular-spectrum',
           'waveform',
           'particle-field',
-          'radial-bars',
           'matrix-rain'
         ];
         const index = parseInt(e.key) - 1;
@@ -222,7 +221,6 @@ export default class VisualizerSidebar {
       'circular-spectrum': 'CIRCULAR SPECTRUM',
       'waveform': 'WAVEFORM',
       'particle-field': 'PARTICLE FIELD',
-      'radial-bars': 'RADIAL BARS',
       'matrix-rain': 'MATRIX RAIN'
     };
     

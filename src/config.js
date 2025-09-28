@@ -26,7 +26,6 @@ export const VISUALIZER_TYPES = {
   CIRCULAR_SPECTRUM: 'circular-spectrum', 
   WAVEFORM: 'waveform',
   PARTICLE_FIELD: 'particle-field',
-  RADIAL_BARS: 'radial-bars',
   MATRIX_RAIN: 'matrix-rain'
 };
 
