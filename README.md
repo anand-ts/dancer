@@ -2,7 +2,9 @@
 
 # dancer
 
-![dancer](/public/dancer_new2.gif)
+<p align="center">
+  <img src="public/dancer_new2.gif" alt="dancer">
+</p>
 
 ## Project Summary
 
