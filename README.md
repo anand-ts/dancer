@@ -2,7 +2,7 @@
 
 # dancer
 
-![dancer](/public/dancer_final.gif)
+![dancer](/public/dancer_new2.gif)
 
 ## Project Summary
 
