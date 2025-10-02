@@ -1,9 +1,8 @@
 
-
 # Dancer
 
 <p align="center">
-  <img src="public/dancer_new.gif" alt="Dancer">
+  <img src="https://github.com/anand-ts/dancer/blob/feature/web-audio-visualizer/public/dancer_new.gif?raw=true" alt="Dancer">
 </p>
 
 ## Project Summary
