@@ -64,3 +64,7 @@ Dancer is a standalone music visualizer that transforms audio into real-time vis
 - iTunes Visualizer**  
   Apple's "wormhole" and particle effects-later powered by the Magnetosphere plugin-offered smooth, psychedelic animations.
 - PSP / PS3 Music Visualizer
+
+---
+
+Spring 2025
