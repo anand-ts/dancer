@@ -1,9 +1,11 @@
 
-
 # Dancer
 
 <p align="center">
-  <img src="public/dancer_new2.gif" alt="Dancer">
+  <video autoplay loop muted playsinline width="600">
+    <source src="public/dancer_new.mp4" type="video/mp4">
+    <img src="public/dancer_new2.gif" alt="Dancer">
+  </video>
 </p>
 
 ## Project Summary
