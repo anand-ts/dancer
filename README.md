@@ -1,16 +1,12 @@
 
+
 # Dancer
 
 <p align="center">
-  <video autoplay loop muted playsinline width="600">
-    <source src="public/dancer_new.mp4" type="video/mp4">
-    <img src="public/dancer_new2.gif" alt="Dancer">
-  </video>
+  <img src="public/dancer_new.gif" alt="Dancer">
 </p>
 
-## Project Summary
-
-Dancer is a standalone music visualizer that transforms audio into real-time visual experiences. Built as a hybrid desktop application using Tauri and modern web technologies, it provides waveform visualizations with interactive controls.
+## Project SummaryDancer is a standalone music visualizer that transforms audio into real-time visual experiences. Built as a hybrid desktop application using Tauri and modern web technologies, it provides waveform visualizations with interactive controls.
 
 ## Key Features
 
