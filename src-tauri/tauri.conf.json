@@ -10,7 +10,7 @@
     "withGlobalTauri": true,
     "windows": [
       {
-        "title": "Dancer - Music Visualizer",
+        "title": "Dancer",
         "width": 1200,
         "height": 800,
         "resizable": true,

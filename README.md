@@ -1,14 +1,14 @@
 
 
-# dancer
+# Dancer
 
 <p align="center">
-  <img src="public/dancer_new2.gif" alt="dancer">
+  <img src="public/dancer_new2.gif" alt="Dancer">
 </p>
 
 ## Project Summary
 
-dancer is a music visualizer that transforms audio into real-time visual experiences. Built with Tauri and web technologies, it provides waveform visualizations with interactive controls.
+Dancer is a standalone music visualizer that transforms audio into real-time visual experiences. Built as a hybrid desktop application using Tauri and modern web technologies, it provides waveform visualizations with interactive controls.
 
 ## Key Features
 
@@ -17,18 +17,17 @@ dancer is a music visualizer that transforms audio into real-time visual experie
 - **Multiple Audio Formats** - Support for MP3, WAV, M4A, FLAC
 - **Interactive Controls** - Audio player with seekable timeline
 - **Draggable Interface** - Moveable control panels
-- **Native Performance** - Tauri desktop application
+- **Native Performance** - Cross-platform desktop application
 
 ## Tech Stack
 
-### **Backend**
-- **Tauri (Rust)**
-- **Web Audio API**
-
-### **Frontend**
-- **HTML / CSS / JavaScript**
-- **Vite**
-- **Canvas API**
+- JavaScript
+- HTML / CSS
+- Canvas API
+- Web Audio API
+- Vite
+- Tauri
+- Rust
 
 ## Usage
 

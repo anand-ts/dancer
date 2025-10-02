@@ -1,4 +1,0 @@
-module ScreenCaptureKitWrapper {
-    header "ScreenCaptureKit-Bridging-Header.h"
-    export *
-}
